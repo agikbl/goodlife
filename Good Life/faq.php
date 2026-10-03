@@ -12,11 +12,11 @@ $faqs = [
     ],
     [
         'q' => 'Metode pembayaran apa saja yang tersedia?',
-        'a' => 'Untuk pesanan bisa bayar pakai QRIS atau Tunai (Cash on Delivery). Kalau pesananmu diantar, ongkir juga bisa dibayar via QRIS (dihitung otomatis dari jarak) atau tunai ke kurir.'
+        'a' => 'Untuk pesanan bisa bayar pakai QRIS atau tunai. Jika diantar, tandai lokasi pada peta di halaman pembayaran; ongkir memakai estimasi jarak rute (jarak lurus dikali 1,3), Rp8.000 hingga 2 km, naik bertahap sampai Rp15.000 pada 5 km, dan maksimal Rp15.000 untuk jarak lebih jauh. Ongkir dapat dibayar via QRIS atau tunai ke kurir.'
     ],
     [
         'q' => 'Bisa ambil sendiri tanpa diantar?',
-        'a' => 'Bisa. Di halaman checkout pilih opsi "Ambil di Toko" — pesanan tetap bisa dibayar QRIS atau tunai saat pengambilan.'
+        'a' => 'Bisa. Di halaman pembayaran pilih opsi "Ambil di Toko" — pesanan tetap bisa dibayar QRIS atau tunai saat pengambilan.'
     ],
     [
         'q' => 'Bagaimana kalau saya mau minta menu tanpa sambal atau extra pedas?',
@@ -37,7 +37,7 @@ $faqs = [
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FAQ — GoodLife Parepare</title>
+<title>FAQ — Good Life Parepare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
 <link href="assets/site-motion.css" rel="stylesheet">
@@ -157,7 +157,7 @@ img{max-width:100%; display:block;}
   <div class="gl-navbar__inner">
     <a href="beranda.php" class="gl-navbar__logo">
       <img class="gl-navbar__logo-image" src="assets/logo.jpeg" alt="">
-      <img class="gl-navbar__logo-name" src="assets/text_name.jpeg" alt="GoodLife">
+      <img class="gl-navbar__logo-name" src="assets/text_name.jpeg" alt="Good Life">
     </a>
     <button class="gl-navbar__toggle" id="glNavToggle" aria-label="Buka menu" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -211,7 +211,7 @@ img{max-width:100%; display:block;}
 <footer class="gl-footer">
   <div class="gl-footer__inner">
     <div>
-      <span class="gl-footer__logo">GoodLife</span>
+      <span class="gl-footer__logo">Good Life</span>
       <p>Kebab &amp; burger, dibuat segar setiap hari di Parepare.</p>
     </div>
     <div class="gl-footer__cols">
@@ -228,7 +228,7 @@ img{max-width:100%; display:block;}
       </div>
     </div>
   </div>
-  <p class="gl-footer__copy">&copy; <?php echo date('Y'); ?> GoodLife Parepare.</p>
+  <p class="gl-footer__copy">&copy; <?php echo date('Y'); ?> Good Life Parepare.</p>
 </footer>
 
 <script>

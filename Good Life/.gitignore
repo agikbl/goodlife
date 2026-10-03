@@ -1,0 +1,5 @@
+/vendor/
+/.env
+/.env.*
+!/.env.example
+/data/push_subscriptions.json

@@ -1,0 +1,52 @@
+[
+    {
+        "id": "kebab",
+        "nama": "Kebab",
+        "kelompok": "makanan"
+    },
+    {
+        "id": "burger",
+        "nama": "Burger",
+        "kelompok": "makanan"
+    },
+    {
+        "id": "kebab_pisang",
+        "nama": "Kebab Pisang",
+        "kelompok": "makanan"
+    },
+    {
+        "id": "piscok",
+        "nama": "Piscok",
+        "kelompok": "makanan"
+    },
+    {
+        "id": "cemilan_series",
+        "nama": "Cemilan Series",
+        "kelompok": "makanan"
+    },
+    {
+        "id": "aneka_nasi",
+        "nama": "Aneka Nasi",
+        "kelompok": "makanan"
+    },
+    {
+        "id": "basic_milk",
+        "nama": "Basic Milk",
+        "kelompok": "minuman"
+    },
+    {
+        "id": "basic_coffee",
+        "nama": "Basic Coffee",
+        "kelompok": "minuman"
+    },
+    {
+        "id": "tea_series",
+        "nama": "Tea Series",
+        "kelompok": "minuman"
+    },
+    {
+        "id": "signature_series",
+        "nama": "Signature Series",
+        "kelompok": "minuman"
+    }
+]

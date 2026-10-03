@@ -1,31 +1,37 @@
 <?php
 // pesan.php — Halaman pemesanan customer (semua digabung: HTML, CSS, JS, PHP)
 
-$toko = ['wa' => '6285173087797'];
-
+$storeDefaults = ['wa' => '6285173087797'];
+$storeConfig = json_decode(file_get_contents(__DIR__ . '/data/store.json'), true);
+$toko = is_array($storeConfig) ? array_merge($storeDefaults, $storeConfig) : $storeDefaults;
+$storeIsOpen = !array_key_exists('is_open', $toko) || $toko['is_open'] === true;
+$storeActivity = is_string($toko['activity'] ?? null) ? $toko['activity'] : 'Tutup sementara';
 $menu = json_decode(file_get_contents(__DIR__ . '/data/menu.json'), true) ?: [];
+$menu = array_map(function ($item) {
+    $item['tersedia'] = !array_key_exists('tersedia', $item) || (bool)$item['tersedia'];
+    return $item;
+}, $menu);
 
 // Sapaan header berdasarkan jam saat ini
 $jam = (int) date('G');
-if ($jam >= 4 && $jam < 11)       { $sapaan = 'Selamat pagi'; $sub = 'Sarapan enak nggak harus ribet, biar GoodLife yang urus.'; }
+if ($jam >= 4 && $jam < 11)       { $sapaan = 'Selamat pagi'; $sub = 'Sarapan enak nggak harus ribet, biar Good Life yang urus.'; }
 elseif ($jam >= 11 && $jam < 15)  { $sapaan = 'Selamat siang'; $sub = 'Waktunya istirahat makan siang. Mau kebab atau burger dulu?'; }
 elseif ($jam >= 15 && $jam < 18)  { $sapaan = 'Selamat sore';  $sub = 'Sore-sore gini paling pas ngemil kebab hangat.'; }
 else                              { $sapaan = 'Selamat malam'; $sub = 'Lapar tengah malam? Tenang, kami masih buka.'; }
 
-$kategoriLabel = [
-    'kebab'                  => 'Kebab',
-    'kebab_pisang'           => 'Kebab Pisang',
-    'piscok'                 => 'Piscok',
-    'burger'                 => 'Burger',
-    'cemilan_series'         => 'Cemilan Series',
-    'aneka_nasi'             => 'Aneka Nasi',
-    'extra_topping_makanan'  => 'Extra Topping (Makanan)',
-    'basic_milk'             => 'Basic Milk',
-    'basic_coffee'           => 'Basic Coffee',
-    'tea_series'             => 'Tea Series',
-    'signature_series'       => 'Signature Series',
-    'extra_topping_minuman'  => 'Extra Topping (Minuman)',
-];
+$categoryConfig = json_decode(file_get_contents(__DIR__ . '/data/categories.json'), true);
+$categoryRecords = is_array($categoryConfig) ? array_values(array_filter($categoryConfig, function ($category) {
+    return is_array($category) && isset($category['id'], $category['nama']) &&
+        in_array($category['kelompok'] ?? '', ['makanan', 'minuman'], true);
+})) : [];
+$kategoriLabel = [];
+$categoryGroupById = [];
+foreach ($categoryRecords as $category) {
+    $kategoriLabel[$category['id']] = $category['nama'];
+    $categoryGroupById[$category['id']] = $category['kelompok'];
+}
+$kategoriLabel['extra_topping_makanan'] = 'Extra Topping (Makanan)';
+$kategoriLabel['extra_topping_minuman'] = 'Extra Topping (Minuman)';
 
   $kategoriGambar = [
     'kebab' => 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?auto=format&fit=crop&w=640&q=80',
@@ -45,20 +51,23 @@ $kategoriLabel = [
 $kelompokMenu = [
   'makanan' => [
     'judul' => 'Aneka Makanan',
-    'kategori' => ['kebab', 'kebab_pisang', 'piscok', 'burger', 'cemilan_series', 'aneka_nasi'],
+    'kategori' => [],
   ],
   'minuman' => [
     'judul' => 'Aneka Minuman',
-    'kategori' => ['basic_milk', 'basic_coffee', 'tea_series', 'signature_series'],
+    'kategori' => [],
   ],
 ];
+foreach ($categoryRecords as $category) {
+  $kelompokMenu[$category['kelompok']]['kategori'][] = $category['id'];
+}
 
 $opsiTopping = [
   'makanan' => array_values(array_filter($menu, function ($item) {
-    return ($item['kategori'] ?? '') === 'extra_topping_makanan';
+    return ($item['kategori'] ?? '') === 'extra_topping_makanan' && $item['tersedia'];
   })),
   'minuman' => array_values(array_filter($menu, function ($item) {
-    return ($item['kategori'] ?? '') === 'extra_topping_minuman';
+    return ($item['kategori'] ?? '') === 'extra_topping_minuman' && $item['tersedia'];
   })),
 ];
 
@@ -77,7 +86,7 @@ foreach ($kelompokMenu as $keyKelompok => $kelompok) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pesan — GoodLife Parepare</title>
+<title>Pesan — Good Life Parepare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
 <link href="assets/site-motion.css" rel="stylesheet">
@@ -100,7 +109,7 @@ foreach ($kelompokMenu as $keyKelompok => $kelompok) {
 }
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth; scrollbar-gutter:stable;}
-html.is-item-modal-open{overflow:hidden; overscroll-behavior:none;}
+html.is-modal-open{overflow:hidden; overscroll-behavior:none;}
 body{margin:0; font-family:var(--font-body); color:var(--ink); background:var(--white); -webkit-font-smoothing:antialiased; padding-bottom:76px;}
 a{color:inherit; text-decoration:none;}
 h1,h2,h3{font-family:var(--font-display); margin:0;}
@@ -113,6 +122,8 @@ button{font-family:var(--font-body);}
 .btn--solid:disabled{background:var(--grey-300); color:var(--grey-500); cursor:not-allowed;}
 .btn--outline{background:transparent; color:var(--green-900); border-color:var(--green-900);}
 .btn--outline:hover{background:var(--green-900); color:var(--white);}
+.btn--outline-light{background:transparent; color:var(--white); border-color:rgba(255,255,255,0.6);}
+.btn--outline-light:hover{background:var(--white); color:var(--green-900); border-color:var(--white);}
 .btn--ghost{background:transparent; color:var(--grey-700);}
 .btn--block{width:100%;}
 
@@ -143,15 +154,21 @@ button{font-family:var(--font-body);}
 
 /* Greeting header */
 .greet{background:var(--green-900); color:var(--white); padding:2.6rem 1.5rem 2.2rem;}
-.greet__inner{max-width:1180px; margin:0 auto;}
+.greet__inner{max-width:1180px; margin:0 auto; display:flex; align-items:flex-end; justify-content:space-between; gap:1.5rem; flex-wrap:wrap;}
 .greet__title{font-size:clamp(1.6rem, 3.5vw, 2.2rem); font-weight:600; margin-bottom:0.4rem;}
 .greet__sub{color:var(--grey-100); opacity:0.85; font-size:0.98rem; max-width:52ch;}
+.greet__cek{flex-shrink:0;}
+.store-closed-notice{max-width:1180px;margin:1rem auto 0;padding:.9rem 1.2rem;border:1px solid #e7c5c0;border-radius:12px;background:#fff4f2;color:#7a2c22;line-height:1.5}
+.store-closed-notice strong{display:block}
+body.is-store-closed .menu-card{opacity:.62;cursor:not-allowed}
 
 /* Menu grid */
 .menu-grid{max-width:1180px; margin:0 auto; padding:1rem 0 2.5rem; display:grid; grid-template-columns:repeat(auto-fill, minmax(185px, 210px)); justify-content:start; gap:0.85rem;}
-.menu-jump{display:flex; justify-content:center; gap:0.75rem; padding:0.8rem 1.5rem; background:var(--white); border-bottom:1px solid var(--grey-300);}
-.menu-jump button{min-width:132px; padding:0.7rem 1.2rem; border:1px solid var(--green-900); border-radius:999px; background:var(--white); color:var(--green-900); text-align:center; font-weight:700; cursor:pointer; transition:background .15s ease, color .15s ease;}
-.menu-jump button:hover,.menu-jump button.is-active{background:var(--green-900); color:var(--white);}
+.menu-jump{display:flex; justify-content:center; gap:2rem; padding:0 1.5rem; background:var(--white); border-bottom:1px solid var(--grey-300);}
+.menu-jump button{padding:0.9rem 0.2rem 0.75rem; border:0; border-bottom:3px solid transparent; border-radius:0; background:transparent; color:var(--grey-700); text-align:center; font-weight:700; cursor:pointer; transition:color .15s ease, border-color .15s ease;}
+.menu-jump button:hover,.menu-jump button.is-active{color:var(--green-900);}
+.menu-jump button.is-active{border-bottom-color:var(--green-500);}
+.menu-jump button:focus-visible{outline:2px solid var(--green-500); outline-offset:3px;}
 .menu-section{max-width:1180px; margin:0 auto; padding:2rem 1.5rem 0; scroll-margin-top:145px;}
 .menu-section__title{font-size:2rem; color:var(--green-900); padding-bottom:0.75rem; border-bottom:2px solid var(--grey-300);}
 .menu-category{padding-top:1.35rem;}
@@ -160,6 +177,8 @@ button{font-family:var(--font-body);}
 .menu-category:last-child .menu-grid{padding-bottom:1.5rem;}
 .menu-card{min-width:0; background:var(--white); border:1px solid var(--grey-300); border-radius:10px; overflow:hidden; cursor:pointer; transition:border-color .15s ease, box-shadow .15s ease; display:flex; flex-direction:column;}
 .menu-card:hover{border-color:var(--green-500); box-shadow:0 5px 14px rgba(22,50,31,0.08);}
+.menu-card.is-unavailable{opacity:.62; cursor:not-allowed;}
+.menu-card.is-unavailable:hover{border-color:var(--grey-300); box-shadow:none;}
 .menu-card.is-selected{border:2px solid var(--green-700); box-shadow:0 0 0 2px rgba(35,74,46,0.12);}
 .menu-card__image{display:block; width:100%; aspect-ratio:16 / 10; object-fit:cover; background:var(--grey-100);}
 .menu-card__body{padding:0.85rem; display:flex; flex-direction:column; gap:0.35rem; flex:1;}
@@ -169,8 +188,8 @@ button{font-family:var(--font-body);}
 .menu-card__price{font-weight:700; color:var(--green-900);}
 .menu-card__badge{font-size:0.7rem; padding:0.2rem 0.55rem; border-radius:999px; background:var(--grey-100); color:var(--green-700); font-weight:700;}
 @media (max-width:600px){
-  .menu-jump{gap:0.5rem; padding:0.65rem 1rem;}
-  .menu-jump button{min-width:0; flex:1; padding:0.65rem 0.8rem;}
+  .menu-jump{gap:1.5rem; padding:0 1rem;}
+  .menu-jump button{padding:0.8rem 0.2rem 0.65rem;}
   .menu-section{padding:1.5rem 1rem 0; scroll-margin-top:120px;}
   .menu-section__title{font-size:1.6rem;}
   .menu-category .menu-grid{grid-template-columns:repeat(2, minmax(0, 1fr)); gap:0.65rem;}
@@ -178,7 +197,7 @@ button{font-family:var(--font-body);}
   .menu-card__footer{align-items:flex-start; flex-direction:column; gap:0.35rem;}
 }
 
-/* Overlay umum (item modal, cart drawer, checkout) */
+/* Overlay umum (item modal, cart drawer, cek pesanan) */
 .overlay-bg{position:fixed; inset:0; background:rgba(22,50,31,0.45); z-index:90; display:none;}
 .overlay-bg.is-open{display:block;}
 
@@ -236,52 +255,57 @@ button{font-family:var(--font-body);}
 .grand-total-row strong{font-family:var(--font-display); color:var(--green-900); font-size:1.3rem;}
 
 /* Checkout modal (multi-step) */
-.checkout-modal{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); width:min(480px, 92vw); max-height:90vh; overflow-y:auto; background:var(--white); border-radius:var(--radius); z-index:110; display:none; box-shadow:var(--shadow);}
-.checkout-modal.is-open{display:block;}
-.checkout-head{padding:1.3rem 1.5rem 0.5rem; display:flex; align-items:center; justify-content:space-between;}
-.checkout-steps{display:flex; gap:0.35rem; padding:0 1.5rem 1rem;}
-.checkout-steps span{height:4px; flex:1; border-radius:999px; background:var(--grey-300);}
-.checkout-steps span.is-done{background:var(--green-900);}
-.checkout-body{padding:0.3rem 1.5rem 1.6rem;}
-.checkout-step{display:none; flex-direction:column; gap:1.1rem;}
-.checkout-step.is-active{display:flex;}
+/* Cek Pesanan modal */
+.cek-modal{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); width:min(480px, 92vw); max-height:88vh; overflow-y:auto; background:var(--white); border-radius:var(--radius); z-index:110; display:none; box-shadow:var(--shadow);}
+.cek-modal.is-open{display:block;}
+.cek-modal__head{padding:1.3rem 1.5rem 0.5rem; display:flex; align-items:center; justify-content:space-between;}
+.cek-modal__body{padding:0.5rem 1.5rem 1.6rem;}
+.cek-search{display:flex; gap:0.6rem; margin-bottom:0.4rem;}
+.cek-search input{flex:1; border:1px solid var(--grey-300); border-radius:10px; padding:0.75rem 0.9rem; font-family:var(--font-body); font-size:0.92rem;}
+.cek-hint{font-size:0.78rem; color:var(--grey-500); margin:0 0 1.2rem;}
+.cek-msg{font-size:0.9rem; color:var(--grey-700); text-align:center; padding:1.5rem 0;}
+.cek-msg.is-error{color:#8A3B2B;}
 
-.option-card{border:1.5px solid var(--grey-300); border-radius:var(--radius); padding:1.1rem 1.2rem; cursor:pointer; display:flex; flex-direction:column; gap:0.3rem;}
-.option-card.is-selected{border-color:var(--green-900); background:var(--grey-100);}
-.option-card__title{font-weight:700;}
-.option-card__desc{font-size:0.85rem; color:var(--grey-700);}
-
-.field label{font-size:0.85rem; font-weight:700; color:var(--green-900); display:block; margin-bottom:0.4rem;}
-.field input[type=text], .field textarea{width:100%; border:1px solid var(--grey-300); border-radius:10px; padding:0.7rem 0.9rem; font-family:var(--font-body); font-size:0.92rem;}
-.field input[type=range]{width:100%;}
-.range-value{font-size:0.85rem; color:var(--grey-700); margin-top:0.3rem;}
-
-.summary-row{display:flex; justify-content:space-between; font-size:0.92rem; padding:0.35rem 0; color:var(--grey-700);}
-.summary-row strong{color:var(--ink);}
-.summary-row--total{border-top:1px solid var(--grey-300); margin-top:0.5rem; padding-top:0.7rem; font-size:1.05rem;}
-.summary-row--total strong{font-family:var(--font-display); color:var(--green-900); font-size:1.25rem;}
-
-.checkout-nav{display:flex; gap:0.7rem; margin-top:0.2rem;}
-
-.status-tracker{display:flex; justify-content:space-between; margin:0.5rem 0 1.5rem;}
-.status-step{flex:1; text-align:center; position:relative; font-size:0.75rem; color:var(--grey-500);}
-.status-step:not(:last-child)::after{content:''; position:absolute; top:9px; left:55%; width:90%; height:2px; background:var(--grey-300);}
-.status-step.is-active:not(:last-child)::after{background:var(--green-900);}
-.status-step__dot{width:20px; height:20px; border-radius:50%; background:var(--grey-300); margin:0 auto 0.4rem; position:relative; z-index:1;}
-.status-step.is-active .status-step__dot{background:var(--green-900);}
-.status-step.is-active{color:var(--green-900); font-weight:700;}
-.confirm-box{text-align:center; padding:0.5rem 0 0.5rem;}
-.confirm-box__id{font-family:var(--font-display); font-size:1.5rem; color:var(--green-900); margin:0.3rem 0 1rem;}
+.cek-result{border:1px solid var(--grey-300); border-radius:var(--radius); padding:1.2rem; margin-bottom:1rem;}
+.cek-result__head{display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-bottom:0.3rem;}
+.cek-result__id{font-family:var(--font-display); font-size:1.1rem; color:var(--green-900);}
+.cek-result__date{font-size:0.78rem; color:var(--grey-500); margin-bottom:0.9rem;}
+.cek-pay-badge{font-size:0.72rem; padding:0.25rem 0.6rem; border-radius:999px; font-weight:700; white-space:nowrap;}
+.cek-pay-badge--lunas{background:#d1e7dd; color:#0f5132;}
+.cek-pay-badge--pending{background:#fff3cd; color:#997404;}
+.cek-result__items{font-size:0.85rem; color:var(--grey-700); margin:0 0 0.9rem; padding-left:1.1rem;}
+.cek-result__items li{margin-bottom:0.2rem;}
+.cek-result__total{display:flex; justify-content:space-between; font-size:0.95rem; font-weight:700; color:var(--green-900); border-top:1px solid var(--grey-100); padding-top:0.7rem;}
+.cek-result__meta{display:grid; gap:0.45rem; margin:0.9rem 0; font-size:0.85rem;}
+.cek-result__meta div{display:flex; justify-content:space-between; gap:1rem;}
+.cek-result__meta dt{color:var(--grey-700);}
+.cek-result__meta dd{margin:0; text-align:right; font-weight:700;}
+.cek-results{margin-top:1rem;}
+.order-tracker{display:flex; gap:.4rem; margin:.9rem 0 1.1rem;}
+.order-tracker__step{flex:1; min-width:0; text-align:center; color:var(--grey-500); font-size:.72rem;}
+.order-tracker__dot{width:16px; height:16px; margin:0 auto .35rem; border-radius:50%; background:var(--grey-300);}
+.order-tracker__step.is-complete{color:var(--green-700); font-weight:700;}
+.order-tracker__step.is-complete .order-tracker__dot{background:var(--green-500);}
+.order-tracker__step.is-current{color:var(--green-900); font-weight:700;}
+.order-tracker__step.is-current .order-tracker__dot{background:var(--green-900); box-shadow:0 0 0 3px rgba(62,122,79,.2);}
+.order-review{border-top:1px solid var(--grey-100); padding-top:1rem; display:grid; gap:.65rem;}
+.order-review label{font-size:.82rem; font-weight:700; color:var(--green-900);}
+.order-review input,.order-review select,.order-review textarea{width:100%; border:1px solid var(--grey-300); border-radius:8px; padding:.65rem .75rem; font:inherit;}
+.order-review textarea{min-height:76px; resize:vertical;}
+.order-review__message{margin:0; font-size:.85rem;}
+.order-review__message.is-error{color:#8A3B2B;}
+.order-review__message.is-ok{color:var(--green-700); font-weight:700;}
+.cek-refresh{font-size:.75rem; color:var(--grey-500); text-align:right; margin:.4rem 0;}
 </style>
 </head>
-<body>
+<body class="<?php echo $storeIsOpen ? '' : 'is-store-closed'; ?>">
 
 <!-- NAVBAR -->
 <nav class="gl-navbar" id="glNavbar">
   <div class="gl-navbar__inner">
     <a href="beranda.php" class="gl-navbar__logo">
       <img class="gl-navbar__logo-image" src="assets/logo.jpeg" alt="">
-      <img class="gl-navbar__logo-name" src="assets/text_name.jpeg" alt="GoodLife">
+      <img class="gl-navbar__logo-name" src="assets/text_name.jpeg" alt="Good Life">
     </a>
     <button class="gl-navbar__toggle" id="glNavToggle" aria-label="Buka menu" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -298,10 +322,20 @@ button{font-family:var(--font-body);}
 <!-- GREETING HEADER -->
 <section class="greet">
   <div class="greet__inner">
-    <h1 class="greet__title"><?php echo $sapaan; ?>! Mau pesan apa hari ini?</h1>
-    <p class="greet__sub"><?php echo $sub; ?></p>
+    <div>
+      <h1 class="greet__title"><?php echo $sapaan; ?>! Mau pesan apa hari ini?</h1>
+      <p class="greet__sub"><?php echo $sub; ?></p>
+    </div>
+    <button type="button" class="btn btn--outline-light greet__cek" id="btnCekPesanan">Cek Pesanan</button>
   </div>
 </section>
+
+<?php if (!$storeIsOpen): ?>
+<aside class="store-closed-notice" role="status">
+  <strong>Toko sedang tutup sementara</strong>
+  <span><?php echo htmlspecialchars($storeActivity, ENT_QUOTES, 'UTF-8'); ?>. Kami belum menerima pesanan baru saat ini.</span>
+</aside>
+<?php endif; ?>
 
 <!-- NAVIGASI SECTION MENU -->
 <nav class="menu-jump" aria-label="Pilih bagian menu">
@@ -316,21 +350,23 @@ button{font-family:var(--font-body);}
     <?php foreach ($kelompok['kategori'] as $kategori): ?>
       <?php if (!$menuTerbagi[$keyKelompok][$kategori]) continue; ?>
       <section class="menu-category">
-        <h3 class="menu-category__title"><?php echo $kategoriLabel[$kategori]; ?></h3>
+        <h3 class="menu-category__title"><?php echo htmlspecialchars($kategoriLabel[$kategori], ENT_QUOTES, 'UTF-8'); ?></h3>
         <div class="menu-grid">
           <?php foreach ($menuTerbagi[$keyKelompok][$kategori] as $item): ?>
-            <div class="menu-card" data-id="<?php echo $item['id']; ?>"
+            <div class="menu-card<?php echo $item['tersedia'] ? '' : ' is-unavailable'; ?>" data-id="<?php echo htmlspecialchars($item['id'], ENT_QUOTES, 'UTF-8'); ?>"
                  data-nama="<?php echo htmlspecialchars($item['nama']); ?>"
                  data-harga="<?php echo $item['harga']; ?>"
-                data-image="<?php echo htmlspecialchars($kategoriGambar[$item['kategori']] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                data-image="<?php echo htmlspecialchars($item['gambar'] ?? ($kategoriGambar[$item['kategori']] ?? ($keyKelompok === 'makanan' ? 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=640&q=80' : 'https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=640&q=80')), ENT_QUOTES, 'UTF-8'); ?>"
+                 data-available="<?php echo $item['tersedia'] ? '1' : '0'; ?>"
                  data-topping-type="<?php echo $keyKelompok; ?>"
                  data-toppings="<?php echo htmlspecialchars(json_encode(array_map(function ($topping) { return ['id' => $topping['id'], 'nama' => $topping['nama'], 'harga' => (int)$topping['harga']]; }, $opsiTopping[$keyKelompok]), JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8'); ?>"
                  data-desc="<?php echo htmlspecialchars($kategoriLabel[$item['kategori']] ?? ''); ?>">
-              <img class="menu-card__image" src="<?php echo htmlspecialchars($kategoriGambar[$item['kategori']] ?? '', ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($item['nama'], ENT_QUOTES, 'UTF-8'); ?>" loading="lazy">
+              <img class="menu-card__image" src="<?php echo htmlspecialchars($item['gambar'] ?? ($kategoriGambar[$item['kategori']] ?? ($keyKelompok === 'makanan' ? 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=640&q=80' : 'https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=640&q=80')), ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($item['nama'], ENT_QUOTES, 'UTF-8'); ?>" loading="lazy">
               <div class="menu-card__body">
                 <span class="menu-card__name"><?php echo htmlspecialchars($item['nama']); ?></span>
                 <div class="menu-card__footer">
                   <span class="menu-card__price">Rp<?php echo number_format($item['harga'], 0, ',', '.'); ?></span>
+                  <?php if (!$item['tersedia']): ?><span class="menu-card__badge menu-card__badge--soldout">Habis</span><?php endif; ?>
                   <?php if ($item['favorit']): ?><span class="menu-card__badge">Favorit</span><?php endif; ?>
                 </div>
               </div>
@@ -401,102 +437,21 @@ button{font-family:var(--font-body);}
   </div>
 </div>
 
-<!-- CHECKOUT MODAL (multi-step) -->
-<div class="checkout-modal" id="checkoutModal">
-  <div class="checkout-head">
-    <h3 id="checkoutTitle">Ringkasan Pesanan</h3>
-    <button class="item-modal__close" id="checkoutClose" style="position:static;">&times;</button>
+<!-- CEK PESANAN MODAL -->
+<div class="cek-modal" id="cekModal" role="dialog" aria-modal="true" aria-labelledby="cekTitle" hidden>
+  <div class="cek-modal__head">
+    <h3 id="cekTitle">Cek Pesanan</h3>
+    <button type="button" class="item-modal__close" id="cekModalClose" aria-label="Tutup" style="position:static;">&times;</button>
   </div>
-  <div class="checkout-steps" id="checkoutSteps">
-    <span data-s="1"></span><span data-s="2"></span><span data-s="3"></span><span data-s="4"></span>
-  </div>
-  <div class="checkout-body">
-
-    <!-- Step 1: Ringkasan -->
-    <div class="checkout-step is-active" data-step="1">
-      <div id="checkoutSummaryList"></div>
-      <div class="summary-row summary-row--total">
-        <span>Total</span><strong id="ckSubtotal">Rp0</strong>
-      </div>
-      <div class="checkout-nav">
-        <button class="btn btn--solid btn--block" id="toStep2">Lanjut</button>
-      </div>
-    </div>
-
-    <!-- Step 2: Opsi pengiriman -->
-    <div class="checkout-step" data-step="2">
-      <div class="option-card" data-delivery="ambil">
-        <span class="option-card__title">Ambil di Toko</span>
-        <span class="option-card__desc">Kamu jemput sendiri pesanan ke GoodLife Parepare.</span>
-      </div>
-      <div class="option-card" data-delivery="antar">
-        <span class="option-card__title">Diantar ke Lokasimu</span>
-        <span class="option-card__desc">Kurir kami antar langsung, ongkir dihitung dari jarak.</span>
-      </div>
-
-      <!-- Muncul kalau pilih "Diantar" -->
-      <div id="deliveryDetail" style="display:none; flex-direction:column; gap:1.1rem;">
-        <div class="field">
-          <label for="ckAlamat">Lokasi pengantaran</label>
-          <input type="text" id="ckAlamat" placeholder="Nama jalan / patokan lokasi">
-        </div>
-        <div class="field">
-          <label for="ckJarak">Perkiraan jarak dari toko</label>
-          <input type="range" id="ckJarak" min="1" max="10" value="2">
-          <div class="range-value"><span id="ckJarakValue">2</span> km — ongkir sekitar <strong id="ckOngkirPreview">Rp0</strong></div>
-        </div>
-        <div class="field">
-          <label>Bayar ongkir pakai</label>
-          <div class="option-card" data-ongkir="qris" style="padding:0.8rem 1rem;">
-            <span class="option-card__title" style="font-size:0.92rem;">QRIS</span>
-          </div>
-          <div class="option-card" data-ongkir="tunai" style="padding:0.8rem 1rem; margin-top:0.5rem;">
-            <span class="option-card__title" style="font-size:0.92rem;">Tunai ke kurir</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="checkout-nav">
-        <button class="btn btn--ghost" id="toStep1From2">Kembali</button>
-        <button class="btn btn--solid btn--block" id="toStep3" disabled>Lanjut</button>
-      </div>
-    </div>
-
-    <!-- Step 3: Metode pembayaran -->
-    <div class="checkout-step" data-step="3">
-      <div class="option-card" data-pay="qris">
-        <span class="option-card__title">QRIS</span>
-        <span class="option-card__desc">Scan &amp; bayar lewat aplikasi e-wallet atau m-banking.</span>
-      </div>
-      <div class="option-card" data-pay="tunai">
-        <span class="option-card__title">Tunai</span>
-        <span class="option-card__desc">Bayar cash saat ambil / pesanan diantar.</span>
-      </div>
-
-      <div id="ckFinalSummary"></div>
-
-      <div class="checkout-nav">
-        <button class="btn btn--ghost" id="toStep2From3">Kembali</button>
-        <button class="btn btn--solid btn--block" id="toStep4" disabled>Buat Pesanan</button>
-      </div>
-    </div>
-
-    <!-- Step 4: Konfirmasi -->
-    <div class="checkout-step" data-step="4">
-      <div class="status-tracker">
-        <div class="status-step is-active"><div class="status-step__dot"></div>Diterima</div>
-        <div class="status-step"><div class="status-step__dot"></div>Diproses</div>
-        <div class="status-step"><div class="status-step__dot"></div>Diantarkan</div>
-        <div class="status-step"><div class="status-step__dot"></div>Selesai</div>
-      </div>
-      <div class="confirm-box">
-        <p>Pesanan berhasil dibuat!</p>
-        <p class="confirm-box__id" id="ckOrderId">—</p>
-        <p style="color:var(--grey-700); font-size:0.9rem;">Pantau status pesananmu di halaman ini, atau hubungi toko kalau ada kendala.</p>
-      </div>
-      <button class="btn btn--solid btn--block" id="btnSelesaiPesan">Selesai</button>
-    </div>
-
+  <div class="cek-modal__body">
+    <form class="cek-search" id="cekForm">
+      <input type="text" id="cekLookup" placeholder="Nomor WhatsApp atau ID pesanan" autocomplete="off" required>
+      <button type="submit" class="btn btn--solid" id="cekSubmit">Cari</button>
+    </form>
+    <p class="cek-hint">Gunakan nomor WhatsApp yang dipakai saat memesan, atau ID pesanan.</p>
+    <p class="cek-msg" id="cekMsg" role="status" aria-live="polite" hidden></p>
+    <p class="cek-refresh" id="cekRefresh" hidden></p>
+    <div class="cek-results" id="cekResults"></div>
   </div>
 </div>
 
@@ -505,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /* ================= State ================= */
   var cart = []; // { id, nama, harga, qty, notes }
-  var checkout = { delivery: null, alamat: '', jarak: 2, ongkir: 0, bayarOngkir: null, metodeBayar: null };
+  var storeIsOpen = <?php echo $storeIsOpen ? 'true' : 'false'; ?>;
   var currentItem = null; // item yang lagi dibuka di modal
   var currentQty = 1;
   var currentToppings = [];
@@ -567,7 +522,7 @@ document.addEventListener('DOMContentLoaded', function () {
       width: body.style.width,
       scrollBehavior: document.documentElement.style.scrollBehavior
     };
-    document.documentElement.classList.add('is-item-modal-open');
+    document.documentElement.classList.add('is-modal-open');
     body.style.position = 'fixed';
     body.style.top = '-' + itemModalScrollLock.scrollY + 'px';
     body.style.left = '0';
@@ -580,7 +535,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var body = document.body;
     var previous = itemModalScrollLock;
     itemModalScrollLock = null;
-    document.documentElement.classList.remove('is-item-modal-open');
+    document.documentElement.classList.remove('is-modal-open');
     body.style.position = previous.position;
     body.style.top = previous.top;
     body.style.left = previous.left;
@@ -603,7 +558,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function closeOverlayIfNothingOpen() {
     if (!itemModal.classList.contains('is-open') &&
         !document.getElementById('cartDrawer').classList.contains('is-open') &&
-        !document.getElementById('checkoutModal').classList.contains('is-open')) {
+        !document.getElementById('cekModal').classList.contains('is-open')) {
       overlayBg.classList.remove('is-open');
     }
   }
@@ -651,6 +606,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   cards.forEach(function (card) {
     card.addEventListener('click', function () {
+      if (!storeIsOpen) return;
+      if (card.dataset.available === '0') return;
       currentItem = {
         id: card.dataset.id,
         nama: card.dataset.nama,
@@ -681,6 +638,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   function closeItemModal() {
+    if (!itemModal.classList.contains('is-open')) return;
     itemModal.classList.remove('is-open');
     unlockPageScroll();
     closeOverlayIfNothingOpen();
@@ -811,176 +769,322 @@ document.addEventListener('DOMContentLoaded', function () {
     openCartDrawer();
   });
 
-  /* ================= Checkout ================= */
-  var checkoutModal = document.getElementById('checkoutModal');
-  var stepEls = document.querySelectorAll('.checkout-step');
-  var stepDots = document.querySelectorAll('#checkoutSteps span');
-
-  function goToStep(n) {
-    stepEls.forEach(function (el) { el.classList.toggle('is-active', el.dataset.step == n); });
-    stepDots.forEach(function (d) { d.classList.toggle('is-done', parseInt(d.dataset.s, 10) <= n); });
-  }
-
-  function renderCheckoutSummary() {
-    var list = document.getElementById('checkoutSummaryList');
-    list.innerHTML = '';
-    cart.forEach(function (item) {
-      var row = document.createElement('div');
-      row.className = 'summary-row';
-      var itemDescription = item.qty + '× ' + item.nama;
-      if (item.toppings && item.toppings.length) {
-        itemDescription += ' + ' + item.toppings.map(function (topping) { return topping.nama; }).join(', ');
-      }
-      row.innerHTML = '<span>' + itemDescription + '</span><strong>' + rupiah(item.qty * item.harga) + '</strong>';
-      list.appendChild(row);
-    });
-    document.getElementById('ckSubtotal').textContent = rupiah(cartTotals().total);
-  }
-
-  function openCheckout() {
+  document.getElementById('btnLanjutBayar').addEventListener('click', function () {
     if (cart.length === 0) return;
-    checkout = { delivery: null, alamat: '', jarak: 2, ongkir: 0, bayarOngkir: null, metodeBayar: null };
-    document.querySelectorAll('[data-delivery]').forEach(function (c) { c.classList.remove('is-selected'); });
-    document.querySelectorAll('[data-ongkir]').forEach(function (c) { c.classList.remove('is-selected'); });
-    document.querySelectorAll('[data-pay]').forEach(function (c) { c.classList.remove('is-selected'); });
-    document.getElementById('deliveryDetail').style.display = 'none';
-    document.getElementById('toStep3').disabled = true;
-    document.getElementById('toStep4').disabled = true;
-    renderCheckoutSummary();
-    goToStep(1);
-    closeCartDrawer();
-    checkoutModal.classList.add('is-open');
+    if (!storeIsOpen) {
+      window.alert('Toko sedang tutup sementara dan belum menerima pesanan baru.');
+      return;
+    }
+    var button = document.getElementById('btnLanjutBayar');
+    button.disabled = true;
+    button.textContent = 'Menyiapkan pesanan...';
+    fetch('api/start_checkout.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: cart })
+    })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok || !data.ok) throw new Error(data.error || 'Gagal menyiapkan pembayaran.');
+          return data;
+        });
+      })
+      .then(function (data) { window.location.href = data.redirect; })
+      .catch(function (error) {
+        button.disabled = false;
+        button.textContent = 'Lanjut ke Pembayaran';
+        window.alert(error.message || 'Terjadi kesalahan jaringan, coba lagi.');
+      });
+  });
+
+  /* ================= Cek pesanan ================= */
+  var cekModal = document.getElementById('cekModal');
+  var cekForm = document.getElementById('cekForm');
+  var cekLookup = document.getElementById('cekLookup');
+  var cekSubmit = document.getElementById('cekSubmit');
+  var cekMsg = document.getElementById('cekMsg');
+  var cekResults = document.getElementById('cekResults');
+  var cekRefresh = document.getElementById('cekRefresh');
+  var lastLookup = '';
+  var refreshTimer = null;
+  var reviewSequence = 0;
+
+  function openCekModal() {
+    lockPageScroll();
+    cekModal.hidden = false;
+    cekModal.classList.add('is-open');
     openOverlay();
+    cekLookup.focus();
+    if (lastLookup) {
+      loadOrders(true);
+      startOrderPolling();
+    }
   }
-  function closeCheckout() {
-    checkoutModal.classList.remove('is-open');
+  function closeCekModal() {
+    if (!cekModal.classList.contains('is-open')) return;
+    if (refreshTimer) {
+      window.clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
+    cekModal.classList.remove('is-open');
+    cekModal.hidden = true;
+    unlockPageScroll();
     closeOverlayIfNothingOpen();
   }
-  document.getElementById('checkoutClose').addEventListener('click', closeCheckout);
-  document.getElementById('btnLanjutBayar').addEventListener('click', openCheckout);
-
-  document.getElementById('toStep2').addEventListener('click', function () { goToStep(2); });
-  document.getElementById('toStep1From2').addEventListener('click', function () { goToStep(1); });
-  document.getElementById('toStep2From3').addEventListener('click', function () { goToStep(2); });
-
-  /* --- Step 2: opsi pengiriman --- */
-  var ongkirPreview = document.getElementById('ckOngkirPreview');
-  var jarakSlider = document.getElementById('ckJarak');
-  var jarakValue = document.getElementById('ckJarakValue');
-
-  function hitungOngkir(km) { return 5000 + km * 2000; }
-  function updateOngkirPreview() {
-    var km = parseInt(jarakSlider.value, 10);
-    jarakValue.textContent = km;
-    checkout.jarak = km;
-    checkout.ongkir = hitungOngkir(km);
-    ongkirPreview.textContent = rupiah(checkout.ongkir);
+  function setCekMessage(message, isError) {
+    cekMsg.textContent = message;
+    cekMsg.hidden = !message;
+    cekMsg.classList.toggle('is-error', Boolean(isError));
   }
-  jarakSlider.addEventListener('input', updateOngkirPreview);
+  function renderOrder(order) {
+    var card = document.createElement('article');
+    card.className = 'cek-result';
+    var heading = document.createElement('div');
+    heading.className = 'cek-result__head';
+    var id = document.createElement('strong');
+    id.className = 'cek-result__id';
+    id.textContent = order.id;
+    heading.appendChild(id);
+    card.appendChild(heading);
+    var statusSequence = order.pengiriman === 'antar'
+      ? ['Diterima', 'Diproses', 'Diantarkan', 'Selesai']
+      : ['Diterima', 'Diproses', 'Siap Diambil', 'Selesai'];
+    var currentStatusIndex = statusSequence.indexOf(order.status);
+    var tracker = document.createElement('div');
+    tracker.className = 'order-tracker';
+    tracker.setAttribute('aria-label', 'Progres pesanan');
+    statusSequence.forEach(function (status, index) {
+      var step = document.createElement('div');
+      step.className = 'order-tracker__step';
+      if (currentStatusIndex >= 0 && index < currentStatusIndex) step.classList.add('is-complete');
+      if (index === currentStatusIndex) step.classList.add('is-current');
+      var dot = document.createElement('div');
+      dot.className = 'order-tracker__dot';
+      step.appendChild(dot);
+      step.appendChild(document.createTextNode(status));
+      tracker.appendChild(step);
+    });
+    card.appendChild(tracker);
 
-  function checkStep2Complete() {
-    var ok = checkout.delivery === 'ambil' || (checkout.delivery === 'antar' && checkout.alamat.trim() !== '' && checkout.bayarOngkir);
-    document.getElementById('toStep3').disabled = !ok;
-  }
-
-  document.querySelectorAll('[data-delivery]').forEach(function (card) {
-    card.addEventListener('click', function () {
-      document.querySelectorAll('[data-delivery]').forEach(function (c) { c.classList.remove('is-selected'); });
-      card.classList.add('is-selected');
-      checkout.delivery = card.dataset.delivery;
-      var detail = document.getElementById('deliveryDetail');
-      if (checkout.delivery === 'antar') {
-        detail.style.display = 'flex';
-        updateOngkirPreview();
-      } else {
-        detail.style.display = 'none';
-        checkout.alamat = ''; checkout.bayarOngkir = null;
+    var items = document.createElement('ul');
+    items.className = 'cek-result__items';
+    order.items.forEach(function (item) {
+      var listItem = document.createElement('li');
+      var description = item.qty + '× ' + item.nama;
+      if (item.toppings && item.toppings.length) {
+        description += ' (Topping: ' + item.toppings.map(function (topping) { return topping.nama; }).join(', ') + ')';
       }
-      checkStep2Complete();
+      if (item.notes) description += ' — Catatan: ' + item.notes;
+      listItem.textContent = description;
+      items.appendChild(listItem);
     });
-  });
-  document.getElementById('ckAlamat').addEventListener('input', function (e) {
-    checkout.alamat = e.target.value;
-    checkStep2Complete();
-  });
-  document.querySelectorAll('[data-ongkir]').forEach(function (card) {
-    card.addEventListener('click', function () {
-      document.querySelectorAll('[data-ongkir]').forEach(function (c) { c.classList.remove('is-selected'); });
-      card.classList.add('is-selected');
-      checkout.bayarOngkir = card.dataset.ongkir;
-      checkStep2Complete();
+    card.appendChild(items);
+
+    var meta = document.createElement('dl');
+    meta.className = 'cek-result__meta';
+    [
+      ['Tanggal & waktu', order.tanggal],
+      ['Status pesanan', order.status],
+      ['Status pembayaran', order.status_pembayaran || 'Belum dibayar'],
+      ['Metode pembayaran', order.metode_bayar === 'qris' ? 'QRIS' : 'Tunai'],
+      ['Pengambilan', order.pengiriman === 'antar' ? 'Diantarkan' : 'Ambil di toko'],
+      ...(order.waktu_pengambilan ? [['Perkiraan waktu ambil', order.waktu_pengambilan]] : [])
+    ].forEach(function (entry) {
+      var row = document.createElement('div');
+      var label = document.createElement('dt');
+      label.textContent = entry[0];
+      var value = document.createElement('dd');
+      value.textContent = entry[1];
+      row.appendChild(label);
+      row.appendChild(value);
+      meta.appendChild(row);
     });
-  });
+    card.appendChild(meta);
 
-  document.getElementById('toStep3').addEventListener('click', function () {
-    renderFinalSummary();
-    goToStep(3);
-  });
-
-  /* --- Step 3: metode pembayaran --- */
-  document.querySelectorAll('[data-pay]').forEach(function (card) {
-    card.addEventListener('click', function () {
-      document.querySelectorAll('[data-pay]').forEach(function (c) { c.classList.remove('is-selected'); });
-      card.classList.add('is-selected');
-      checkout.metodeBayar = card.dataset.pay;
-      document.getElementById('toStep4').disabled = false;
-    });
-  });
-
-  function renderFinalSummary() {
-    var box = document.getElementById('ckFinalSummary');
-    var t = cartTotals();
-    var ongkir = checkout.delivery === 'antar' ? checkout.ongkir : 0;
-    box.innerHTML =
-      '<div class="summary-row"><span>Subtotal pesanan</span><strong>' + rupiah(t.total) + '</strong></div>' +
-      (checkout.delivery === 'antar'
-        ? '<div class="summary-row"><span>Ongkir (' + checkout.jarak + ' km, bayar ' + (checkout.bayarOngkir === 'qris' ? 'QRIS' : 'tunai') + ')</span><strong>' + rupiah(ongkir) + '</strong></div>'
-        : '<div class="summary-row"><span>Pengambilan</span><strong>Ambil di toko</strong></div>') +
-      '<div class="summary-row summary-row--total"><span>Total bayar</span><strong>' + rupiah(t.total + ongkir) + '</strong></div>';
+    var total = document.createElement('div');
+    total.className = 'cek-result__total';
+    var totalLabel = document.createElement('span');
+    totalLabel.textContent = 'Total pembayaran';
+    var totalValue = document.createElement('strong');
+    totalValue.textContent = rupiah(order.total);
+    total.appendChild(totalLabel);
+    total.appendChild(totalValue);
+    card.appendChild(total);
+    if (order.ulasan_tersedia) {
+      var reviewForm = document.createElement('form');
+      reviewForm.className = 'order-review';
+      reviewForm.dataset.reviewOrder = order.id;
+      var phoneId = 'reviewPhone' + (++reviewSequence);
+      var ratingId = 'reviewRating' + reviewSequence;
+      var commentId = 'reviewComment' + reviewSequence;
+      reviewForm.innerHTML =
+        '<label for="' + phoneId + '">Nomor WhatsApp untuk verifikasi</label>' +
+        '<input id="' + phoneId + '" type="tel" inputmode="tel" autocomplete="tel" data-review-field="phone" placeholder="08xxxxxxxxxx" required>' +
+        '<label for="' + ratingId + '">Rating</label>' +
+        '<select id="' + ratingId + '" data-review-field="rating" required><option value="">Pilih rating</option><option value="5">5 - Sangat puas</option><option value="4">4 - Puas</option><option value="3">3 - Cukup</option><option value="2">2 - Kurang puas</option><option value="1">1 - Tidak puas</option></select>' +
+        '<label for="' + commentId + '">Ulasan</label>' +
+        '<textarea id="' + commentId + '" data-review-field="comment" maxlength="2000" required placeholder="Ceritakan pengalamanmu"></textarea>' +
+        '<button class="btn btn--solid" type="submit">Kirim ulasan</button>' +
+        '<p class="order-review__message" data-review-message role="status" aria-live="polite"></p>';
+      card.appendChild(reviewForm);
+    } else if (order.ulasan_dikirim) {
+      var reviewed = document.createElement('p');
+      reviewed.className = 'cek-hint';
+      reviewed.textContent = 'Terima kasih, ulasan untuk pesanan ini sudah dikirim.';
+      card.appendChild(reviewed);
+    }
+    cekResults.appendChild(card);
   }
 
-  /* --- Step 4: submit pesanan --- */
-  document.getElementById('toStep4').addEventListener('click', function () {
-    var payload = {
-      items: cart,
-      pengiriman: checkout.delivery,
-      alamat: checkout.alamat,
-      jarak: checkout.delivery === 'antar' ? checkout.jarak : 0,
-      bayar_ongkir: checkout.delivery === 'antar' ? checkout.bayarOngkir : null,
-      metode_bayar: checkout.metodeBayar
-    };
-    var btn = document.getElementById('toStep4');
-    btn.disabled = true; btn.textContent = 'Memproses...';
+  function renderOrders(orders, preserveReviewFields) {
+    var savedFields = {};
+    var focusedField = document.activeElement;
+    var focusedOrder = focusedField && focusedField.closest('[data-review-order]');
+    var focusedKey = focusedField && focusedField.dataset ? focusedField.dataset.reviewField : '';
+    if (preserveReviewFields) {
+      cekResults.querySelectorAll('[data-review-order]').forEach(function (form) {
+        var fields = {};
+        form.querySelectorAll('[data-review-field]').forEach(function (field) {
+          fields[field.dataset.reviewField] = field.value;
+        });
+        savedFields[form.dataset.reviewOrder] = fields;
+      });
+    }
+    cekResults.innerHTML = '';
+    orders.forEach(renderOrder);
+    Object.keys(savedFields).forEach(function (orderId) {
+      var form = cekResults.querySelector('[data-review-order="' + CSS.escape(orderId) + '"]');
+      if (!form) return;
+      form.querySelectorAll('[data-review-field]').forEach(function (field) {
+        if (Object.prototype.hasOwnProperty.call(savedFields[orderId], field.dataset.reviewField)) {
+          field.value = savedFields[orderId][field.dataset.reviewField];
+        }
+      });
+    });
+    if (focusedOrder && focusedKey) {
+      var focusOrderId = focusedOrder.dataset.reviewOrder;
+      var focusForm = cekResults.querySelector('[data-review-order="' + CSS.escape(focusOrderId) + '"]');
+      var nextFocus = focusForm && focusForm.querySelector('[data-review-field="' + CSS.escape(focusedKey) + '"]');
+      if (nextFocus) nextFocus.focus();
+    }
+  }
 
-    fetch('api/submit_order.php', {
+  function loadOrders(quiet) {
+    if (!lastLookup || !cekModal.classList.contains('is-open')) return;
+    fetch('api/check_order.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lookup: lastLookup }),
+      cache: 'no-store'
+    })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok || !data.ok) throw new Error(data.error || 'Gagal memperbarui status pesanan.');
+          return data;
+        });
+      })
+      .then(function (data) {
+        renderOrders(data.orders, true);
+        cekRefresh.textContent = 'Status diperbarui ' + new Date().toLocaleTimeString('id-ID');
+        cekRefresh.hidden = false;
+        if (!quiet) setCekMessage('', false);
+      })
+      .catch(function (error) {
+        if (quiet) {
+          cekRefresh.textContent = 'Pembaruan gagal: ' + (error.message || 'coba lagi sebentar.');
+          cekRefresh.hidden = false;
+        } else {
+          setCekMessage(error.message || 'Gagal memperbarui status pesanan.', true);
+        }
+      });
+  }
+
+  function startOrderPolling() {
+    if (refreshTimer) window.clearInterval(refreshTimer);
+    refreshTimer = window.setInterval(function () { loadOrders(true); }, 15000);
+  }
+
+  document.getElementById('btnCekPesanan').addEventListener('click', openCekModal);
+  document.getElementById('cekModalClose').addEventListener('click', closeCekModal);
+  cekForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var lookup = cekLookup.value.trim();
+    if (!lookup) {
+      setCekMessage('Masukkan nomor WhatsApp atau ID pesanan.', true);
+      return;
+    }
+    cekSubmit.disabled = true;
+    cekSubmit.textContent = 'Mencari...';
+    cekResults.innerHTML = '';
+    setCekMessage('Sedang mencari pesanan...', false);
+
+    lastLookup = lookup;
+    fetch('api/check_order.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lookup: lookup }),
+      cache: 'no-store'
+    })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok || !data.ok) throw new Error(data.error || 'Gagal mencari pesanan.');
+          return data;
+        });
+      })
+      .then(function (data) {
+        setCekMessage('', false);
+        renderOrders(data.orders, false);
+        cekRefresh.textContent = 'Status diperbarui ' + new Date().toLocaleTimeString('id-ID');
+        cekRefresh.hidden = false;
+        startOrderPolling();
+      })
+      .catch(function (error) {
+        setCekMessage(error.message || 'Terjadi kesalahan jaringan, coba lagi.', true);
+      })
+      .finally(function () {
+        cekSubmit.disabled = false;
+        cekSubmit.textContent = 'Cari';
+      });
+  });
+  cekResults.addEventListener('submit', function (event) {
+    var form = event.target.closest('[data-review-order]');
+    if (!form) return;
+    event.preventDefault();
+    var submitButton = form.querySelector('[type="submit"]');
+    var message = form.querySelector('[data-review-message]');
+    var fields = form.querySelectorAll('[data-review-field]');
+    var payload = {
+      order_id: form.dataset.reviewOrder,
+      whatsapp: fields[0].value,
+      rating: fields[1].value,
+      komentar: fields[2].value
+    };
+    submitButton.disabled = true;
+    message.className = 'order-review__message';
+    message.textContent = 'Mengirim ulasan...';
+    fetch('api/submit_review.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        btn.disabled = false; btn.textContent = 'Buat Pesanan';
-        if (!data.ok) { alert(data.error || 'Gagal membuat pesanan.'); return; }
-        document.getElementById('ckOrderId').textContent = data.order.id;
-        goToStep(4);
+      .then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok || !data.ok) throw new Error(data.error || 'Ulasan gagal dikirim.');
+          return data;
+        });
       })
-      .catch(function () {
-        btn.disabled = false; btn.textContent = 'Buat Pesanan';
-        alert('Terjadi kesalahan jaringan, coba lagi.');
+      .then(function () { loadOrders(true); })
+      .catch(function (error) {
+        message.className = 'order-review__message is-error';
+        message.textContent = error.message || 'Terjadi kesalahan jaringan, coba lagi.';
+        submitButton.disabled = false;
       });
-  });
-
-  document.getElementById('btnSelesaiPesan').addEventListener('click', function () {
-    cart = [];
-    syncSelectedCards();
-    renderCartBar();
-    closeCheckout();
   });
 
   overlayBg.addEventListener('click', function () {
     closeItemModal();
     closeCartDrawer();
-    // checkout sengaja tidak ditutup klik luar, biar nggak ke-cancel nggak sengaja pas isi form
+    closeCekModal();
   });
 });
 </script>

@@ -1,13 +1,16 @@
 <?php
 // beranda.php — Halaman utama sisi customer (semua digabung: HTML, CSS, JS, PHP)
 
-$toko = [
-    'nama'      => 'GoodLife Parepare',
+$storeDefaults = [
+    'nama'      => 'Good Life Parepare',
     'alamat'    => 'Jl. H. Jamil Ismail, Parepare (Perempatan Ablam, samping Waterboom)',
     'jam_buka'  => '15:00',
     'jam_tutup' => '23:00',
     'wa'        => '6285173087797',
+    'gallery'   => [],
 ];
+$storeConfig = json_decode(file_get_contents(__DIR__ . '/data/store.json'), true);
+$toko = is_array($storeConfig) ? array_merge($storeDefaults, $storeConfig) : $storeDefaults;
 
 $reviewsPath = __DIR__ . '/data/reviews.json';
 $reviews = json_decode(file_get_contents($reviewsPath), true) ?: [];
@@ -23,7 +26,7 @@ if (count($reviews) > 0) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GoodLife Parepare — Kebab &amp; Burger</title>
+<title>Good Life Parepare — Kebab &amp; Burger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
 <link href="assets/site-motion.css" rel="stylesheet">
@@ -107,24 +110,30 @@ img{max-width:100%; display:block;}
 .reviews__score-num{font-family:var(--font-display); font-size:3rem; color:var(--green-900); line-height:1;}
 .reviews__stars{color:var(--green-500); font-size:1.1rem; letter-spacing:2px;}
 .reviews__count{font-size:0.88rem; color:var(--grey-700);}
-.reviews__grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap:1.25rem;}
+.reviews__carousel{position:relative;}
+.reviews__viewport{overflow:hidden;}
+.reviews__grid{display:flex; gap:1.25rem; overflow-x:auto; scroll-behavior:smooth; scroll-snap-type:x mandatory; scrollbar-width:none; overscroll-behavior-x:contain;}
+.reviews__grid::-webkit-scrollbar{display:none;}
+.review-card{flex:0 0 calc((100% - 2.5rem) / 3); scroll-snap-align:start;}
+.reviews__controls{display:flex; gap:0.5rem;}
+.reviews__controls[hidden]{display:none;}
+.reviews__arrow{width:42px; height:42px; border:1px solid var(--green-900); border-radius:50%; background:var(--white); color:var(--green-900); font-size:1.35rem; line-height:1; cursor:pointer; transition:background .15s ease, color .15s ease;}
+.reviews__arrow:hover:not(:disabled){background:var(--green-900); color:var(--white);}
+.reviews__arrow:disabled{opacity:0.35; cursor:not-allowed;}
 .review-card{background:var(--grey-100); border-radius:var(--radius); padding:1.4rem; display:flex; flex-direction:column; gap:0.6rem;}
 .review-card__top{display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;}
 .review-card__name{font-weight:700;}
 .review-card__stars{color:var(--green-500); letter-spacing:1px; white-space:nowrap;}
 .review-card__text{color:var(--grey-700); line-height:1.55; font-size:0.95rem; margin:0;}
 .review-card__date{font-size:0.78rem; color:var(--grey-500);}
-
-.review-form-wrap{max-width:520px; margin-bottom:2rem;}
-.review-form{background:var(--grey-100); border-radius:var(--radius); padding:1.6rem; display:flex; flex-direction:column; gap:1rem;}
-.review-form__row{display:flex; flex-direction:column; gap:0.4rem;}
-.review-form__row label{font-size:0.85rem; font-weight:700; color:var(--green-900);}
-.review-form__row input[type=text], .review-form__row textarea{border:1px solid var(--grey-300); border-radius:10px; padding:0.7rem 0.9rem; font-family:var(--font-body); font-size:0.95rem; resize:vertical; background:var(--white);}
-.star-picker{font-size:1.6rem; color:var(--grey-300); letter-spacing:4px; cursor:pointer; width:fit-content;}
-.star-picker span{transition:color .1s ease;}
-.star-picker span.is-active{color:var(--green-500);}
-.review-form__actions{display:flex; gap:0.75rem;}
-.review-form__msg{font-size:0.88rem; margin:0; color:var(--green-700); min-height:1em;}
+.store-gallery{max-width:1180px; margin:2.5rem auto 0; padding:0 1.5rem 1rem;}
+.store-gallery__head{display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem;}
+.store-gallery h2{font:600 1.8rem var(--font-display); color:var(--green-900); margin:0;}
+.store-gallery__track{display:flex; gap:1rem; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; overscroll-behavior-x:contain;}
+.store-gallery__track::-webkit-scrollbar{display:none;}
+.store-gallery__track img{flex:0 0 min(78%, 340px); width:min(78%, 340px); height:220px; object-fit:cover; border-radius:var(--radius); scroll-snap-align:start;}
+.store-gallery__controls{display:flex; gap:.5rem;}
+.store-gallery__controls button{width:40px;height:40px;border:1px solid var(--green-900);border-radius:50%;background:var(--white);color:var(--green-900);font-size:1.3rem;cursor:pointer;}
 
 /* Footer */
 .gl-footer{background:var(--green-900); color:var(--grey-100); padding:3rem 1.5rem 1.5rem;}
@@ -143,12 +152,18 @@ img{max-width:100%; display:block;}
   .info-card{width:100%; margin-top:-2rem; padding:1.25rem; gap:1rem;}
   .info-card__item{min-width:0;}
   .reviews{padding:4rem 1.25rem 4.5rem;}
+  .store-gallery{margin-top:2rem; padding:0 1.25rem .5rem;}
+  .store-gallery h2{font-size:1.6rem;}
+  .store-gallery__track img{height:180px;}
   .reviews__head{margin-bottom:1.75rem;}
-  .review-form{width:100%; padding:1.25rem;}
+  .review-card{flex-basis:100%;}
   .gl-footer{padding:2.5rem 1.25rem 1.25rem;}
   .gl-footer__inner{flex-direction:column; gap:1.5rem;}
   .gl-footer__cols{gap:clamp(2rem, 10vw, 3rem);}
   .gl-footer__copy{margin-top:2rem;}
+}
+@media (min-width:761px) and (max-width:1000px){
+  .review-card{flex-basis:calc((100% - 1.25rem) / 2);}
 }
 @media (max-width:380px){
   .gl-navbar__inner{padding:0.65rem 1rem;}
@@ -172,8 +187,8 @@ img{max-width:100%; display:block;}
 <nav class="gl-navbar" id="glNavbar">
   <div class="gl-navbar__inner">
     <a href="beranda.php" class="gl-navbar__logo">
-      <img class="gl-navbar__logo-image" src="assets/logo.jpeg" alt="Logo GoodLife">
-      <img class="gl-navbar__logo-name" src="assets/text_name.jpeg" alt="GoodLife">
+      <img class="gl-navbar__logo-image" src="assets/logo.jpeg" alt="Logo Good Life">
+      <img class="gl-navbar__logo-name" src="assets/text_name.jpeg" alt="Good Life">
     </a>
     <button class="gl-navbar__toggle" id="glNavToggle" aria-label="Buka menu" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -210,6 +225,8 @@ img{max-width:100%; display:block;}
     <div class="info-card__item">
       <span class="info-card__label">Jam operasional</span>
       <span class="info-card__value"><?php echo htmlspecialchars($toko['jam_buka'] . ' – ' . $toko['jam_tutup']); ?></span>
+      <span class="info-card__label">Status toko</span>
+      <span class="info-card__value"><?php echo !array_key_exists('is_open', $toko) || $toko['is_open'] === true ? 'Buka — menerima pesanan' : 'Tutup sementara — ' . htmlspecialchars((string)($toko['activity'] ?? 'Tutup sementara'), ENT_QUOTES, 'UTF-8'); ?></span>
     </div>
     <div class="info-card__divider"></div>
     <div class="info-card__item">
@@ -218,6 +235,25 @@ img{max-width:100%; display:block;}
     </div>
   </div>
 </section>
+
+<?php if (!empty($toko['gallery'])): ?>
+<section class="store-gallery" aria-labelledby="galleryTitle">
+  <div class="store-gallery__head">
+    <h2 id="galleryTitle">Galeri Good Life</h2>
+    <?php if (count($toko['gallery']) > 1): ?>
+    <div class="store-gallery__controls">
+      <button type="button" id="galleryPrev" aria-label="Foto sebelumnya">&lsaquo;</button>
+      <button type="button" id="galleryNext" aria-label="Foto berikutnya">&rsaquo;</button>
+    </div>
+    <?php endif; ?>
+  </div>
+  <div class="store-gallery__track" id="galleryTrack">
+    <?php foreach ($toko['gallery'] as $image): ?>
+      <img src="<?php echo htmlspecialchars($image, ENT_QUOTES, 'UTF-8'); ?>" alt="Galeri Good Life" loading="lazy">
+    <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
 
 <!-- ULASAN -->
 <section class="reviews" id="ulasan">
@@ -229,44 +265,27 @@ img{max-width:100%; display:block;}
         <span class="reviews__count"><?php echo count($reviews); ?> ulasan pelanggan</span>
       </div>
     </div>
-    <button class="btn btn--outline" id="btnTulisUlasan">Tulis ulasan</button>
+    <div class="reviews__controls" id="reviewsControls" <?php echo count($reviews) <= 3 ? 'hidden' : ''; ?>>
+      <button class="reviews__arrow" type="button" id="reviewsPrev" aria-label="Lihat ulasan sebelumnya" disabled>&lsaquo;</button>
+      <button class="reviews__arrow" type="button" id="reviewsNext" aria-label="Lihat ulasan berikutnya">&rsaquo;</button>
+    </div>
   </div>
 
-  <div class="review-form-wrap" id="reviewFormWrap" hidden>
-  <form class="review-form" id="reviewForm">
-    <div class="review-form__row">
-      <label for="rfNama">Nama</label>
-      <input type="text" id="rfNama" name="nama" placeholder="Nama kamu" required>
-    </div>
-    <div class="review-form__row">
-      <label>Rating</label>
-      <div class="star-picker" id="starPicker" data-value="0">
-        <span data-star="1">★</span><span data-star="2">★</span><span data-star="3">★</span><span data-star="4">★</span><span data-star="5">★</span>
+  <div class="reviews__carousel">
+    <div class="reviews__viewport">
+      <div class="reviews__grid" id="reviewsGrid">
+        <?php foreach (array_reverse($reviews) as $r): ?>
+          <article class="review-card">
+            <div class="review-card__top">
+              <span class="review-card__name"><?php echo htmlspecialchars($r['nama']); ?></span>
+              <span class="review-card__stars"><?php echo str_repeat('★', (int)$r['rating']) . str_repeat('☆', 5 - (int)$r['rating']); ?></span>
+            </div>
+            <p class="review-card__text"><?php echo htmlspecialchars($r['komentar']); ?></p>
+            <span class="review-card__date"><?php echo htmlspecialchars($r['tanggal']); ?></span>
+          </article>
+        <?php endforeach; ?>
       </div>
-      <input type="hidden" id="rfRating" name="rating" value="0">
     </div>
-    <div class="review-form__row">
-      <label for="rfKomentar">Komentar</label>
-      <textarea id="rfKomentar" name="komentar" rows="3" placeholder="Gimana rasanya, pelayanannya?" required></textarea>
-    </div>
-    <div class="review-form__actions">
-      <button type="submit" class="btn btn--solid">Kirim ulasan</button>
-    </div>
-    <p class="review-form__msg" id="reviewFormMsg"></p>
-  </form>
-  </div>
-
-  <div class="reviews__grid" id="reviewsGrid">
-    <?php foreach (array_reverse($reviews) as $r): ?>
-      <article class="review-card">
-        <div class="review-card__top">
-          <span class="review-card__name"><?php echo htmlspecialchars($r['nama']); ?></span>
-          <span class="review-card__stars"><?php echo str_repeat('★', (int)$r['rating']) . str_repeat('☆', 5 - (int)$r['rating']); ?></span>
-        </div>
-        <p class="review-card__text"><?php echo htmlspecialchars($r['komentar']); ?></p>
-        <span class="review-card__date"><?php echo htmlspecialchars($r['tanggal']); ?></span>
-      </article>
-    <?php endforeach; ?>
   </div>
 </section>
 
@@ -274,7 +293,7 @@ img{max-width:100%; display:block;}
 <footer class="gl-footer">
   <div class="gl-footer__inner">
     <div>
-      <span class="gl-footer__logo">GoodLife</span>
+      <span class="gl-footer__logo">Good Life</span>
       <p>Kebab &amp; burger, dibuat segar setiap hari di Parepare.</p>
     </div>
     <div class="gl-footer__cols">
@@ -291,7 +310,7 @@ img{max-width:100%; display:block;}
       </div>
     </div>
   </div>
-  <p class="gl-footer__copy">&copy; <?php echo date('Y'); ?> GoodLife Parepare.</p>
+  <p class="gl-footer__copy">&copy; <?php echo date('Y'); ?> Good Life Parepare.</p>
 </footer>
 
 <script>
@@ -307,119 +326,42 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Form ulasan buka/tutup
-  var btnTulis = document.getElementById('btnTulisUlasan');
-  var form = document.getElementById('reviewForm');
-  var formWrap = document.getElementById('reviewFormWrap');
-  var reviewDeviceKey = 'goodlife_review_device_id';
-  var reviewSubmittedKey = 'goodlife_review_submitted';
-  var reviewDeviceId = localStorage.getItem(reviewDeviceKey);
-  if (!reviewDeviceId) {
-    var deviceBytes = new Uint8Array(16);
-    window.crypto.getRandomValues(deviceBytes);
-    reviewDeviceId = Array.from(deviceBytes).map(function (byte) {
-      return byte.toString(16).padStart(2, '0');
-    }).join('');
-    localStorage.setItem(reviewDeviceKey, reviewDeviceId);
+  var reviewsGrid = document.getElementById('reviewsGrid');
+  var reviewsPrev = document.getElementById('reviewsPrev');
+  var reviewsNext = document.getElementById('reviewsNext');
+  if (reviewsGrid && reviewsPrev && reviewsNext) {
+    function updateReviewControls() {
+      var maxScroll = reviewsGrid.scrollWidth - reviewsGrid.clientWidth;
+      reviewsPrev.disabled = reviewsGrid.scrollLeft <= 1;
+      reviewsNext.disabled = reviewsGrid.scrollLeft >= maxScroll - 1;
+    }
+    function scrollReviews(direction) {
+      var card = reviewsGrid.querySelector('.review-card');
+      if (!card) return;
+      var gap = parseFloat(getComputedStyle(reviewsGrid).columnGap) || 0;
+      reviewsGrid.scrollBy({ left: direction * (card.getBoundingClientRect().width + gap), behavior: 'smooth' });
+    }
+    reviewsPrev.addEventListener('click', function () { scrollReviews(-1); });
+    reviewsNext.addEventListener('click', function () { scrollReviews(1); });
+    reviewsGrid.addEventListener('scroll', updateReviewControls);
+    window.addEventListener('resize', updateReviewControls);
+    updateReviewControls();
   }
-  function lockReviewForm() {
-    closeReviewForm(true);
-    if (btnTulis) btnTulis.hidden = true;
-  }
-  function closeReviewForm(locked) {
-    if (!formWrap) return;
-    formWrap.hidden = true;
-    formWrap.classList.remove('is-closing');
-    if (!locked && btnTulis) btnTulis.textContent = 'Tulis ulasan';
-  }
-  if (localStorage.getItem(reviewSubmittedKey) === '1') {
-    lockReviewForm();
-  }
-  if (btnTulis && formWrap) {
-    btnTulis.addEventListener('click', function () {
-      if (formWrap.hidden) {
-        formWrap.hidden = false;
-        formWrap.classList.remove('is-closing');
-        btnTulis.textContent = 'Tutup form';
-      } else {
-        closeReviewForm(false);
-      }
+
+  var galleryTrack = document.getElementById('galleryTrack');
+  if (galleryTrack) {
+    ['galleryPrev', 'galleryNext'].forEach(function (id, index) {
+      var button = document.getElementById(id);
+      if (!button) return;
+      button.addEventListener('click', function () {
+        var image = galleryTrack.querySelector('img');
+        if (!image) return;
+        var gap = parseFloat(getComputedStyle(galleryTrack).gap) || 0;
+        galleryTrack.scrollBy({ left: (index === 0 ? -1 : 1) * (image.getBoundingClientRect().width + gap), behavior: 'smooth' });
+      });
     });
   }
 
-  // Star picker
-  var starPicker = document.getElementById('starPicker');
-  var ratingInput = document.getElementById('rfRating');
-  var stars = starPicker ? starPicker.querySelectorAll('span') : [];
-  function paintStars(value) {
-    stars.forEach(function (s) {
-      s.classList.toggle('is-active', parseInt(s.dataset.star, 10) <= value);
-    });
-  }
-  function resetStars() {
-    if (ratingInput) ratingInput.value = 0;
-    paintStars(0);
-  }
-  stars.forEach(function (s) {
-    s.addEventListener('click', function () {
-      var value = parseInt(s.dataset.star, 10);
-      ratingInput.value = value;
-      paintStars(value);
-    });
-  });
-
-  // Submit ulasan
-  var reviewForm = document.getElementById('reviewForm');
-  var msg = document.getElementById('reviewFormMsg');
-  var grid = document.getElementById('reviewsGrid');
-  if (reviewForm) {
-    reviewForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var rating = parseInt(ratingInput.value, 10);
-      if (!rating) { msg.textContent = 'Pilih rating bintang dulu ya.'; return; }
-
-      var payload = {
-        nama: document.getElementById('rfNama').value.trim(),
-        rating: rating,
-        komentar: document.getElementById('rfKomentar').value.trim(),
-        device_id: reviewDeviceId
-      };
-      msg.textContent = 'Mengirim...';
-
-      fetch('api/submit_review.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-          if (!data.ok) {
-            msg.textContent = data.error || 'Gagal mengirim ulasan.';
-            if (data.already_reviewed) {
-              localStorage.setItem(reviewSubmittedKey, '1');
-              lockReviewForm();
-            }
-            return;
-          }
-          var card = document.createElement('article');
-          card.className = 'review-card';
-          card.innerHTML =
-            '<div class="review-card__top"><span class="review-card__name"></span><span class="review-card__stars"></span></div>' +
-            '<p class="review-card__text"></p><span class="review-card__date"></span>';
-          card.querySelector('.review-card__name').textContent = data.review.nama;
-          card.querySelector('.review-card__stars').textContent = '★'.repeat(data.review.rating) + '☆'.repeat(5 - data.review.rating);
-          card.querySelector('.review-card__text').textContent = data.review.komentar;
-          card.querySelector('.review-card__date').textContent = data.review.tanggal;
-          grid.prepend(card);
-          reviewForm.reset();
-          resetStars();
-          localStorage.setItem(reviewSubmittedKey, '1');
-          lockReviewForm();
-          msg.textContent = '';
-        })
-        .catch(function () { msg.textContent = 'Terjadi kesalahan jaringan, coba lagi.'; });
-    });
-  }
 });
 </script>
 </body>

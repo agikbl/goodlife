@@ -1,18 +1,21 @@
 <?php
 // support.php — Halaman bantuan/kontak pelanggan (semua digabung: HTML, CSS, JS, PHP)
 
-$toko = [
+$storeDefaults = [
+    'alamat' => 'Jl. H. Jamil Ismail, Parepare (Perempatan Ablam, samping Waterboom)',
     'wa'    => '6285173087797',
     'wa2'   => '085141368994',
     'ig'    => 'goodlife_parepare',
 ];
+$storeConfig = json_decode(file_get_contents(__DIR__ . '/data/store.json'), true);
+$toko = is_array($storeConfig) ? array_merge($storeDefaults, $storeConfig) : $storeDefaults;
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Support — GoodLife Parepare</title>
+<title>Support — Good Life Parepare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
 <link href="assets/site-motion.css" rel="stylesheet">
@@ -135,8 +138,8 @@ img{max-width:100%; display:block;}
 <nav class="gl-navbar" id="glNavbar">
   <div class="gl-navbar__inner">
     <a href="beranda.php" class="gl-navbar__logo">
-      <img class="gl-navbar__logo-image" src="assets/logo.jpeg" alt="Logo GoodLife">
-      <img class="gl-navbar__logo-name" src="assets/text_name.jpeg" alt="GoodLife">
+      <img class="gl-navbar__logo-image" src="assets/logo.jpeg" alt="Logo Good Life">
+      <img class="gl-navbar__logo-name" src="assets/text_name.jpeg" alt="Good Life">
     </a>
     <button class="gl-navbar__toggle" id="glNavToggle" aria-label="Buka menu" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -165,7 +168,7 @@ img{max-width:100%; display:block;}
   <div class="contact-grid">
     <a class="contact-item" href="https://wa.me/<?php echo $toko['wa']; ?>" target="_blank" rel="noopener noreferrer">
       <span class="contact-item__label">WhatsApp 1</span>
-      <span class="contact-item__value">0851-7308-7797</span>
+      <span class="contact-item__value"><?php echo htmlspecialchars($toko['wa']); ?></span>
     </a>
     <a class="contact-item" href="https://wa.me/62<?php echo ltrim($toko['wa2'], '0'); ?>" target="_blank" rel="noopener noreferrer">
       <span class="contact-item__label">WhatsApp 2</span>
@@ -181,13 +184,13 @@ img{max-width:100%; display:block;}
 <!-- LOKASI -->
 <section class="location-section" aria-labelledby="locationTitle">
   <div class="location-section__head">
-    <h2 id="locationTitle">Lokasi GoodLife</h2>
-    <a class="location-link" href="https://maps.app.goo.gl/HmHDcLf9RcshKSFV8" target="_blank" rel="noopener noreferrer">Buka di Google Maps</a>
+    <h2 id="locationTitle">Lokasi Good Life</h2>
+    <a class="location-link" href="https://www.google.com/maps/search/?api=1&amp;query=<?php echo rawurlencode($toko['alamat']); ?>" target="_blank" rel="noopener noreferrer">Buka di Google Maps</a>
   </div>
   <div class="location-map">
     <iframe
       src="https://www.google.com/maps?q=-4.0077714%2C119.632276&z=17&output=embed"
-      title="Peta lokasi GoodLife Parepare"
+      title="Peta lokasi Good Life Parepare"
       loading="lazy"
       referrerpolicy="no-referrer-when-downgrade"
       allowfullscreen>
@@ -198,7 +201,7 @@ img{max-width:100%; display:block;}
 <!-- FORM PESAN -->
 <section class="support-form-section">
   <h2>Kirim pesan langsung</h2>
-  <p>Ceritakan kendalanya, tim GoodLife akan tindak lanjuti lewat kontak yang kamu kasih.</p>
+  <p>Ceritakan kendalanya, tim Good Life akan tindak lanjuti lewat kontak yang kamu kasih.</p>
 
   <form class="support-form" id="supportForm">
     <div class="support-form__two">
@@ -237,7 +240,7 @@ img{max-width:100%; display:block;}
 <footer class="gl-footer">
   <div class="gl-footer__inner">
     <div>
-      <span class="gl-footer__logo">GoodLife</span>
+      <span class="gl-footer__logo">Good Life</span>
       <p>Kebab &amp; burger, dibuat segar setiap hari di Parepare.</p>
     </div>
     <div class="gl-footer__cols">
@@ -254,7 +257,7 @@ img{max-width:100%; display:block;}
       </div>
     </div>
   </div>
-  <p class="gl-footer__copy">&copy; <?php echo date('Y'); ?> GoodLife Parepare.</p>
+  <p class="gl-footer__copy">&copy; <?php echo date('Y'); ?> Good Life Parepare.</p>
 </footer>
 
 <script>
@@ -284,6 +287,8 @@ document.addEventListener('DOMContentLoaded', function () {
         kategori: document.getElementById('sfKategori').value,
         pesan: document.getElementById('sfPesan').value.trim()
       };
+      var submitButton = form.querySelector('[type="submit"]');
+      submitButton.disabled = true;
 
       msg.className = 'support-form__msg';
       msg.textContent = 'Mengirim...';
@@ -293,20 +298,23 @@ document.addEventListener('DOMContentLoaded', function () {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-        .then(function (res) { return res.json(); })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Gagal mengirim pesan.');
+            return data;
+          });
+        })
         .then(function (data) {
-          if (!data.ok) {
-            msg.className = 'support-form__msg is-error';
-            msg.textContent = data.error || 'Gagal mengirim pesan.';
-            return;
-          }
           msg.className = 'support-form__msg is-ok';
           msg.textContent = 'Terkirim! Tim kami akan hubungi kamu lewat kontak yang kamu kasih.';
           form.reset();
         })
-        .catch(function () {
+        .catch(function (error) {
           msg.className = 'support-form__msg is-error';
-          msg.textContent = 'Terjadi kesalahan jaringan, coba lagi.';
+          msg.textContent = error.message || 'Terjadi kesalahan jaringan, coba lagi.';
+        })
+        .finally(function () {
+          submitButton.disabled = false;
         });
     });
   }

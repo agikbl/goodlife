@@ -1,72 +1,417 @@
 [
-  { "id": "keb1", "nama": "Kebab Mini", "kategori": "kebab", "harga": 7000, "favorit": false },
-  { "id": "keb2", "nama": "Kebab Kornet", "kategori": "kebab", "harga": 7000, "favorit": false },
-  { "id": "keb3", "nama": "Kebab Sosis", "kategori": "kebab", "harga": 8000, "favorit": false },
-  { "id": "keb4", "nama": "Kebab Mix", "kategori": "kebab", "harga": 10000, "favorit": true },
-  { "id": "keb5", "nama": "Kebab Crispy", "kategori": "kebab", "harga": 13000, "favorit": true },
-  { "id": "keb6", "nama": "Kebab Beef", "kategori": "kebab", "harga": 15000, "favorit": false },
-  { "id": "keb7", "nama": "Kebab Ayam", "kategori": "kebab", "harga": 20000, "favorit": true },
-  { "id": "keb8", "nama": "Kebab Beef Moza", "kategori": "kebab", "harga": 22000, "favorit": true },
-
-  { "id": "kpi1", "nama": "Kebab Pisang Cocho Crunchy", "kategori": "kebab_pisang", "harga": 12000, "favorit": true },
-  { "id": "kpi2", "nama": "Kebab Pisang Coklat Keju", "kategori": "kebab_pisang", "harga": 14000, "favorit": false },
-  { "id": "kpi3", "nama": "Kebab Pisang Tiramisu", "kategori": "kebab_pisang", "harga": 12000, "favorit": false },
-
-  { "id": "pis1", "nama": "Piscok Coklat", "kategori": "piscok", "harga": 12000, "favorit": false },
-  { "id": "pis2", "nama": "Piscok Coklat Keju", "kategori": "piscok", "harga": 14000, "favorit": false },
-  { "id": "pis3", "nama": "Piscok Tiramisyu", "kategori": "piscok", "harga": 12000, "favorit": false },
-  { "id": "pis4", "nama": "Piscok Coklat Milo", "kategori": "piscok", "harga": 14000, "favorit": true },
-
-  { "id": "bur1", "nama": "Burger Ori", "kategori": "burger", "harga": 7000, "favorit": false },
-  { "id": "bur2", "nama": "Burger Crispy", "kategori": "burger", "harga": 15000, "favorit": false },
-  { "id": "bur3", "nama": "Burger Crispy Hot Spicy BBQ", "kategori": "burger", "harga": 17000, "favorit": true },
-  { "id": "bur4", "nama": "Burger Ayam", "kategori": "burger", "harga": 18000, "favorit": true },
-  { "id": "bur5", "nama": "Burger Sosis", "kategori": "burger", "harga": 15000, "favorit": false },
-  { "id": "bur6", "nama": "Burger Beef", "kategori": "burger", "harga": 18000, "favorit": true },
-  { "id": "bur7", "nama": "Burger Beef Mozarellah", "kategori": "burger", "harga": 22000, "favorit": true },
-
-  { "id": "cem1", "nama": "Good Platter", "kategori": "cemilan_series", "harga": 27000, "favorit": true },
-  { "id": "cem2", "nama": "Kentang Goreng", "kategori": "cemilan_series", "harga": 13000, "favorit": false },
-  { "id": "cem3", "nama": "Otak-otak Goreng", "kategori": "cemilan_series", "harga": 15000, "favorit": false },
-  { "id": "cem4", "nama": "Pangsit Goreng", "kategori": "cemilan_series", "harga": 15000, "favorit": true },
-  { "id": "cem5", "nama": "Tekker Coklat", "kategori": "cemilan_series", "harga": 7000, "favorit": true },
-  { "id": "cem6", "nama": "Tekker Coklat Keju", "kategori": "cemilan_series", "harga": 8000, "favorit": false },
-  { "id": "cem7", "nama": "Tekker Tiramisyu", "kategori": "cemilan_series", "harga": 7000, "favorit": false },
-
-  { "id": "nas1", "nama": "Nasi Ikan Suwir Kemangi", "kategori": "aneka_nasi", "harga": 15000, "favorit": true },
-  { "id": "nas2", "nama": "Nasi Ayam Suwir Kemangi", "kategori": "aneka_nasi", "harga": 15000, "favorit": true },
-
-  { "id": "topm1", "nama": "Keju Slice/Parut", "kategori": "extra_topping_makanan", "harga": 3000, "favorit": false },
-  { "id": "topm2", "nama": "Mozarellah", "kategori": "extra_topping_makanan", "harga": 6000, "favorit": false },
-  { "id": "topm3", "nama": "Telur", "kategori": "extra_topping_makanan", "harga": 5000, "favorit": false },
-
-  { "id": "milk1", "nama": "Dark Choco", "kategori": "basic_milk", "harga": 15000, "favorit": true },
-  { "id": "milk2", "nama": "Choco Huzelnut", "kategori": "basic_milk", "harga": 13000, "favorit": false },
-  { "id": "milk3", "nama": "Creamy Choco", "kategori": "basic_milk", "harga": 13000, "favorit": true },
-  { "id": "milk4", "nama": "Brown Sugar", "kategori": "basic_milk", "harga": 12000, "favorit": false },
-  { "id": "milk5", "nama": "Red Velvet", "kategori": "basic_milk", "harga": 12000, "favorit": false },
-  { "id": "milk6", "nama": "Baby Vanila", "kategori": "basic_milk", "harga": 12000, "favorit": true },
-  { "id": "milk7", "nama": "Greentea", "kategori": "basic_milk", "harga": 12000, "favorit": false },
-  { "id": "milk8", "nama": "Huzelnut", "kategori": "basic_milk", "harga": 12000, "favorit": false },
-  { "id": "milk9", "nama": "Milo", "kategori": "basic_milk", "harga": 12000, "favorit": false },
-  { "id": "milk10", "nama": "Ovaltine", "kategori": "basic_milk", "harga": 12000, "favorit": false },
-  { "id": "milk11", "nama": "Thaitea", "kategori": "basic_milk", "harga": 12000, "favorit": false },
-
-  { "id": "cof1", "nama": "Coffee Blend", "kategori": "basic_coffee", "harga": 15000, "favorit": true },
-  { "id": "cof2", "nama": "Ice Coffe Gula Aren", "kategori": "basic_coffee", "harga": 15000, "favorit": false },
-  { "id": "cof3", "nama": "Ice Creamy Coffe", "kategori": "basic_coffee", "harga": 15000, "favorit": false },
-  { "id": "cof4", "nama": "Coffe Caramel", "kategori": "basic_coffee", "harga": 13000, "favorit": true },
-  { "id": "cof5", "nama": "Cappucino", "kategori": "basic_coffee", "harga": 13000, "favorit": false },
-
-  { "id": "tea1", "nama": "Lemontea", "kategori": "tea_series", "harga": 12000, "favorit": true },
-  { "id": "tea2", "nama": "Lemonade", "kategori": "tea_series", "harga": 12000, "favorit": false },
-  { "id": "tea3", "nama": "Oranges Squash", "kategori": "tea_series", "harga": 15000, "favorit": false },
-  { "id": "tea4", "nama": "Manggo Squash", "kategori": "tea_series", "harga": 15000, "favorit": true },
-
-  { "id": "sig1", "nama": "Milky Strawberry", "kategori": "signature_series", "harga": 15000, "favorit": true },
-  { "id": "sig2", "nama": "Milky Blueberry", "kategori": "signature_series", "harga": 15000, "favorit": false },
-  { "id": "sig3", "nama": "Milky Oreo", "kategori": "signature_series", "harga": 15000, "favorit": false },
-  { "id": "sig4", "nama": "Choco Lava Milo", "kategori": "signature_series", "harga": 15000, "favorit": true },
-
-  { "id": "topd1", "nama": "Keju Parut", "kategori": "extra_topping_minuman", "harga": 3000, "favorit": false }
+    {
+        "id": "keb1",
+        "nama": "Kebab Mini",
+        "kategori": "kebab",
+        "harga": 7000,
+        "favorit": false,
+        "tersedia": true
+    },
+    {
+        "id": "keb2",
+        "nama": "Kebab Kornet",
+        "kategori": "kebab",
+        "harga": 7000,
+        "favorit": false,
+        "tersedia": true
+    },
+    {
+        "id": "keb3",
+        "nama": "Kebab Sosis",
+        "kategori": "kebab",
+        "harga": 8000,
+        "favorit": false
+    },
+    {
+        "id": "keb4",
+        "nama": "Kebab Mix",
+        "kategori": "kebab",
+        "harga": 10000,
+        "favorit": true
+    },
+    {
+        "id": "keb5",
+        "nama": "Kebab Crispy",
+        "kategori": "kebab",
+        "harga": 13000,
+        "favorit": true
+    },
+    {
+        "id": "keb6",
+        "nama": "Kebab Beef",
+        "kategori": "kebab",
+        "harga": 15000,
+        "favorit": false
+    },
+    {
+        "id": "keb7",
+        "nama": "Kebab Ayam",
+        "kategori": "kebab",
+        "harga": 20000,
+        "favorit": true
+    },
+    {
+        "id": "keb8",
+        "nama": "Kebab Beef Moza",
+        "kategori": "kebab",
+        "harga": 22000,
+        "favorit": true
+    },
+    {
+        "id": "kpi1",
+        "nama": "Kebab Pisang Cocho Crunchy",
+        "kategori": "kebab_pisang",
+        "harga": 12000,
+        "favorit": true
+    },
+    {
+        "id": "kpi2",
+        "nama": "Kebab Pisang Coklat Keju",
+        "kategori": "kebab_pisang",
+        "harga": 14000,
+        "favorit": false
+    },
+    {
+        "id": "kpi3",
+        "nama": "Kebab Pisang Tiramisu",
+        "kategori": "kebab_pisang",
+        "harga": 12000,
+        "favorit": false
+    },
+    {
+        "id": "pis1",
+        "nama": "Piscok Coklat",
+        "kategori": "piscok",
+        "harga": 12000,
+        "favorit": false
+    },
+    {
+        "id": "pis2",
+        "nama": "Piscok Coklat Keju",
+        "kategori": "piscok",
+        "harga": 14000,
+        "favorit": false
+    },
+    {
+        "id": "pis3",
+        "nama": "Piscok Tiramisyu",
+        "kategori": "piscok",
+        "harga": 12000,
+        "favorit": false
+    },
+    {
+        "id": "pis4",
+        "nama": "Piscok Coklat Milo",
+        "kategori": "piscok",
+        "harga": 14000,
+        "favorit": true
+    },
+    {
+        "id": "bur1",
+        "nama": "Burger Ori",
+        "kategori": "burger",
+        "harga": 7000,
+        "favorit": false
+    },
+    {
+        "id": "bur2",
+        "nama": "Burger Crispy",
+        "kategori": "burger",
+        "harga": 15000,
+        "favorit": false
+    },
+    {
+        "id": "bur3",
+        "nama": "Burger Crispy Hot Spicy BBQ",
+        "kategori": "burger",
+        "harga": 17000,
+        "favorit": true
+    },
+    {
+        "id": "bur4",
+        "nama": "Burger Ayam",
+        "kategori": "burger",
+        "harga": 18000,
+        "favorit": true
+    },
+    {
+        "id": "bur5",
+        "nama": "Burger Sosis",
+        "kategori": "burger",
+        "harga": 15000,
+        "favorit": false
+    },
+    {
+        "id": "bur6",
+        "nama": "Burger Beef",
+        "kategori": "burger",
+        "harga": 18000,
+        "favorit": true
+    },
+    {
+        "id": "bur7",
+        "nama": "Burger Beef Mozarellah",
+        "kategori": "burger",
+        "harga": 22000,
+        "favorit": true
+    },
+    {
+        "id": "cem1",
+        "nama": "Good Platter",
+        "kategori": "cemilan_series",
+        "harga": 27000,
+        "favorit": true
+    },
+    {
+        "id": "cem2",
+        "nama": "Kentang Goreng",
+        "kategori": "cemilan_series",
+        "harga": 13000,
+        "favorit": false
+    },
+    {
+        "id": "cem3",
+        "nama": "Otak-otak Goreng",
+        "kategori": "cemilan_series",
+        "harga": 15000,
+        "favorit": false
+    },
+    {
+        "id": "cem4",
+        "nama": "Pangsit Goreng",
+        "kategori": "cemilan_series",
+        "harga": 15000,
+        "favorit": true
+    },
+    {
+        "id": "cem5",
+        "nama": "Tekker Coklat",
+        "kategori": "cemilan_series",
+        "harga": 7000,
+        "favorit": true
+    },
+    {
+        "id": "cem6",
+        "nama": "Tekker Coklat Keju",
+        "kategori": "cemilan_series",
+        "harga": 8000,
+        "favorit": false
+    },
+    {
+        "id": "cem7",
+        "nama": "Tekker Tiramisyu",
+        "kategori": "cemilan_series",
+        "harga": 7000,
+        "favorit": false
+    },
+    {
+        "id": "nas1",
+        "nama": "Nasi Ikan Suwir Kemangi",
+        "kategori": "aneka_nasi",
+        "harga": 15000,
+        "favorit": true
+    },
+    {
+        "id": "nas2",
+        "nama": "Nasi Ayam Suwir Kemangi",
+        "kategori": "aneka_nasi",
+        "harga": 15000,
+        "favorit": true
+    },
+    {
+        "id": "topm1",
+        "nama": "Keju Slice/Parut",
+        "kategori": "extra_topping_makanan",
+        "harga": 3000,
+        "favorit": false
+    },
+    {
+        "id": "topm2",
+        "nama": "Mozarellah",
+        "kategori": "extra_topping_makanan",
+        "harga": 6000,
+        "favorit": false
+    },
+    {
+        "id": "topm3",
+        "nama": "Telur",
+        "kategori": "extra_topping_makanan",
+        "harga": 5000,
+        "favorit": false
+    },
+    {
+        "id": "milk1",
+        "nama": "Dark Choco",
+        "kategori": "basic_milk",
+        "harga": 15000,
+        "favorit": true
+    },
+    {
+        "id": "milk2",
+        "nama": "Choco Huzelnut",
+        "kategori": "basic_milk",
+        "harga": 13000,
+        "favorit": false
+    },
+    {
+        "id": "milk3",
+        "nama": "Creamy Choco",
+        "kategori": "basic_milk",
+        "harga": 13000,
+        "favorit": true
+    },
+    {
+        "id": "milk4",
+        "nama": "Brown Sugar",
+        "kategori": "basic_milk",
+        "harga": 12000,
+        "favorit": false
+    },
+    {
+        "id": "milk5",
+        "nama": "Red Velvet",
+        "kategori": "basic_milk",
+        "harga": 12000,
+        "favorit": false
+    },
+    {
+        "id": "milk6",
+        "nama": "Baby Vanila",
+        "kategori": "basic_milk",
+        "harga": 12000,
+        "favorit": true
+    },
+    {
+        "id": "milk7",
+        "nama": "Greentea",
+        "kategori": "basic_milk",
+        "harga": 12000,
+        "favorit": false
+    },
+    {
+        "id": "milk8",
+        "nama": "Huzelnut",
+        "kategori": "basic_milk",
+        "harga": 12000,
+        "favorit": false
+    },
+    {
+        "id": "milk9",
+        "nama": "Milo",
+        "kategori": "basic_milk",
+        "harga": 12000,
+        "favorit": false
+    },
+    {
+        "id": "milk10",
+        "nama": "Ovaltine",
+        "kategori": "basic_milk",
+        "harga": 12000,
+        "favorit": false
+    },
+    {
+        "id": "milk11",
+        "nama": "Thaitea",
+        "kategori": "basic_milk",
+        "harga": 12000,
+        "favorit": false
+    },
+    {
+        "id": "cof1",
+        "nama": "Coffee Blend",
+        "kategori": "basic_coffee",
+        "harga": 15000,
+        "favorit": true
+    },
+    {
+        "id": "cof2",
+        "nama": "Ice Coffe Gula Aren",
+        "kategori": "basic_coffee",
+        "harga": 15000,
+        "favorit": false
+    },
+    {
+        "id": "cof3",
+        "nama": "Ice Creamy Coffe",
+        "kategori": "basic_coffee",
+        "harga": 15000,
+        "favorit": false
+    },
+    {
+        "id": "cof4",
+        "nama": "Coffe Caramel",
+        "kategori": "basic_coffee",
+        "harga": 13000,
+        "favorit": true
+    },
+    {
+        "id": "cof5",
+        "nama": "Cappucino",
+        "kategori": "basic_coffee",
+        "harga": 13000,
+        "favorit": false
+    },
+    {
+        "id": "tea1",
+        "nama": "Lemontea",
+        "kategori": "tea_series",
+        "harga": 12000,
+        "favorit": true
+    },
+    {
+        "id": "tea2",
+        "nama": "Lemonade",
+        "kategori": "tea_series",
+        "harga": 12000,
+        "favorit": false
+    },
+    {
+        "id": "tea3",
+        "nama": "Oranges Squash",
+        "kategori": "tea_series",
+        "harga": 15000,
+        "favorit": false
+    },
+    {
+        "id": "tea4",
+        "nama": "Manggo Squash",
+        "kategori": "tea_series",
+        "harga": 15000,
+        "favorit": true
+    },
+    {
+        "id": "sig1",
+        "nama": "Milky Strawberry",
+        "kategori": "signature_series",
+        "harga": 15000,
+        "favorit": true
+    },
+    {
+        "id": "sig2",
+        "nama": "Milky Blueberry",
+        "kategori": "signature_series",
+        "harga": 15000,
+        "favorit": false
+    },
+    {
+        "id": "sig3",
+        "nama": "Milky Oreo",
+        "kategori": "signature_series",
+        "harga": 15000,
+        "favorit": false
+    },
+    {
+        "id": "sig4",
+        "nama": "Choco Lava Milo",
+        "kategori": "signature_series",
+        "harga": 15000,
+        "favorit": true
+    },
+    {
+        "id": "topd1",
+        "nama": "Keju Parut",
+        "kategori": "extra_topping_minuman",
+        "harga": 3000,
+        "favorit": false
+    }
 ]
