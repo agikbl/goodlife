@@ -14,12 +14,7 @@ if (strlen($activity) > 100 || (!$isOpen && $activity === '')) {
 }
 
 try {
-    $store = admin_mutate_json('data/store.json', function (&$store) use ($isOpen, $activity) {
-        $store['is_open'] = $isOpen;
-        $store['activity'] = $isOpen ? 'Menerima pesanan' : $activity;
-        $store['status_updated_at'] = date('Y-m-d H:i:s');
-        return $store;
-    });
+    $store = goodlife_db_update_store_status($isOpen, $isOpen ? 'Menerima pesanan' : $activity);
     admin_json_response(['ok' => true, 'store_status' => [
         'is_open' => $store['is_open'],
         'activity' => $store['activity'],

@@ -8,7 +8,7 @@ try {
     $showHistory = ($_GET['history'] ?? '') === '1';
     $businessTimezone = new DateTimeZone('Asia/Makassar');
     $today = (new DateTimeImmutable('now', $businessTimezone))->format('Y-m-d');
-    $orders = array_values(array_filter(admin_read_json('data/orders.json'), 'is_array'));
+    $orders = array_values(array_filter(admin_read_dataset('data/orders.json'), 'is_array'));
     $orders = array_values(array_filter($orders, function ($order) use ($showHistory, $today) {
         $timestamp = (string)($order['tanggal'] ?? '');
         if (!preg_match('/^\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2})?$/', $timestamp)) {

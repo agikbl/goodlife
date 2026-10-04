@@ -3,7 +3,6 @@
 // On Windows, set OPENSSL_CONF to PHP's openssl.cnf before generating keys; then set the three VAPID
 // environment variables. Keep the private key secret. Web Push requires HTTPS except on localhost.
 require_once __DIR__ . '/bootstrap.php';
-require_once ADMIN_ROOT . 'vendor/autoload.php';
 
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\VAPID;
@@ -41,16 +40,12 @@ function admin_push_validate_endpoint($endpoint)
 
 function admin_push_send_new_order($order)
 {
-    $subscriptionsPath = ADMIN_ROOT . 'data/push_subscriptions.json';
-    if (!is_file($subscriptionsPath)) {
-        return;
-    }
-
-    $subscriptions = admin_read_json('data/push_subscriptions.json');
+    $subscriptions = goodlife_db_push_subscriptions();
     if (!$subscriptions) {
         return;
     }
 
+    require_once ADMIN_ROOT . 'vendor/autoload.php';
     $vapid = admin_push_vapid_config();
     $webPush = new WebPush(
         ['VAPID' => $vapid],
@@ -92,18 +87,6 @@ function admin_push_send_new_order($order)
     }
 
     if ($expiredEndpoints) {
-        admin_mutate_json('data/push_subscriptions.json', function (&$records) use ($expiredEndpoints) {
-            $records = array_values(array_filter($records, function ($record) use ($expiredEndpoints) {
-                if (!is_array($record) || !is_string($record['endpoint'] ?? null)) {
-                    return true;
-                }
-                foreach ($expiredEndpoints as $endpoint) {
-                    if (hash_equals($record['endpoint'], $endpoint)) {
-                        return false;
-                    }
-                }
-                return true;
-            }));
-        });
+        goodlife_db_remove_push_subscriptions($expiredEndpoints);
     }
 }

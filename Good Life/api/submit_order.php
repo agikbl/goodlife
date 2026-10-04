@@ -2,8 +2,8 @@
 // api/submit_order.php — menerima pesanan baru via fetch() dari pesan.php
 session_start();
 header('Content-Type: application/json');
+require_once __DIR__ . '/../database/repository.php';
 
-$dataPath = __DIR__ . '/../data/orders.json';
 $input = json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) {
     $input = [];
@@ -18,9 +18,10 @@ if (!is_array($draft) || !isset($draft['token'], $draft['items'], $draft['expire
     exit;
 }
 
-$storeContent = file_get_contents(__DIR__ . '/../data/store.json');
-$store = $storeContent === false ? null : json_decode($storeContent, true);
-if (!is_array($store)) {
+try {
+    $store = goodlife_db_store();
+} catch (Throwable $error) {
+    error_log('Order submission store read failed: ' . $error->getMessage());
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'Status toko tidak dapat dibaca. Pesanan belum dibuat.']);
     exit;
@@ -102,11 +103,13 @@ if ($pengiriman === 'antar') {
     }
 }
 
-$menuPath = __DIR__ . '/../data/menu.json';
-$menu = json_decode(file_get_contents($menuPath), true);
-if (!is_array($menu)) {
+try {
+    $menu = goodlife_db_products();
+    $categoryRecords = goodlife_db_categories();
+} catch (Throwable $error) {
+    error_log('Order submission catalog read failed: ' . $error->getMessage());
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Data menu tidak dapat dibaca.']);
+    echo json_encode(['ok' => false, 'error' => 'Data menu atau kategori tidak dapat dibaca.']);
     exit;
 }
 
@@ -119,13 +122,6 @@ foreach ($menu as $menuItem) {
 
 $subtotal = 0;
 $normalizedItems = [];
-$categoryContent = file_get_contents(__DIR__ . '/../data/categories.json');
-$categoryRecords = $categoryContent === false ? null : json_decode($categoryContent, true);
-if (!is_array($categoryRecords)) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Data kategori tidak dapat dibaca. Pesanan belum dibuat.']);
-    exit;
-}
 $categoryGroups = [];
 foreach ($categoryRecords as $categoryRecord) {
     if (is_array($categoryRecord) && isset($categoryRecord['id']) &&
@@ -175,7 +171,7 @@ foreach ($items as $it) {
         $toppingTotal += $toppingPrice;
         $selectedToppings[] = [
             'id' => $toppingId,
-            'nama' => htmlspecialchars($toppingItem['nama'], ENT_QUOTES, 'UTF-8'),
+            'nama' => $toppingItem['nama'],
             'harga' => $toppingPrice,
         ];
     }
@@ -185,33 +181,23 @@ foreach ($items as $it) {
     $subtotal += $itemPrice * $quantity;
     $normalizedItems[] = [
         'id' => $menuId,
-        'nama' => htmlspecialchars($menuItem['nama'], ENT_QUOTES, 'UTF-8'),
+        'nama' => $menuItem['nama'],
         'harga' => $itemPrice,
         'base_harga' => $basePrice,
         'qty' => $quantity,
-        'notes' => htmlspecialchars(substr(trim((string)($it['notes'] ?? '')), 0, 500), ENT_QUOTES, 'UTF-8'),
+        'notes' => substr(trim((string)($it['notes'] ?? '')), 0, 500),
         'toppings' => $selectedToppings,
     ];
 }
 $total = $subtotal + ($pengiriman === 'antar' ? $ongkir : 0);
 
-$ordersContent = file_get_contents($dataPath);
-$orders = $ordersContent === false ? null : json_decode($ordersContent, true);
-if (!is_array($orders)) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Data pesanan tidak dapat dibaca.']);
-    exit;
-}
-
-$orderCreatedAt = new DateTimeImmutable('now', new DateTimeZone('Asia/Makassar'));
 $newOrder = [
-    'id'           => 'ORD' . $orderCreatedAt->format('ymd') . str_pad((string)(count($orders) + 1), 3, '0', STR_PAD_LEFT),
     'nama_pemesan' => $customerName,
     'whatsapp'     => $whatsapp,
     'items'        => $normalizedItems,
     'pengiriman'   => $pengiriman,
     'waktu_pengambilan' => $pengiriman === 'ambil' ? $pickupTime : null,
-    'alamat'       => htmlspecialchars($alamat, ENT_QUOTES, 'UTF-8'),
+    'alamat'       => $alamat,
     'ongkir'       => $ongkir,
     'latitude'     => $pengiriman === 'antar' ? $latitude : null,
     'longitude'    => $pengiriman === 'antar' ? $longitude : null,
@@ -223,12 +209,12 @@ $newOrder = [
     'total'        => $total,
     'status'       => 'Diterima',
     'status_pembayaran' => 'Belum dibayar',
-    'tanggal'      => $orderCreatedAt->format('Y-m-d H:i'),
-    'zona_waktu'   => 'Asia/Makassar',
 ];
 
-$orders[] = $newOrder;
-if (file_put_contents($dataPath, json_encode($orders, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX) === false) {
+try {
+    $newOrder = goodlife_db_create_order($newOrder);
+} catch (Throwable $error) {
+    error_log('Order submission database write failed: ' . $error->getMessage());
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'Pesanan gagal disimpan.']);
     exit;
@@ -239,6 +225,7 @@ try {
     admin_push_send_new_order($newOrder);
 } catch (Throwable $error) {
     error_log('New order Web Push failed for ' . $newOrder['id'] . ': ' . $error->getMessage());
+    http_response_code(200);
 }
 
 unset($_SESSION['checkout_draft']);

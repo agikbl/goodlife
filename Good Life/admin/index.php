@@ -21,8 +21,8 @@ if ($period === 'minggu') {
     $rangeLabel = $today->format('d M Y');
 }
 
-$allOrders = admin_read_json('data/orders.json');
-$store = admin_read_json('data/store.json');
+$allOrders = admin_read_dataset('data/orders.json');
+$store = admin_read_dataset('data/store.json');
 $storeIsOpen = !array_key_exists('is_open', $store) || $store['is_open'] === true;
 $storeActivity = (string)($store['activity'] ?? ($storeIsOpen ? 'Menerima pesanan' : 'Tutup sementara'));
 $csrf = admin_csrf_token();
@@ -152,6 +152,12 @@ require __DIR__ . '/includes/header.php';
 .store-status-form input{width:min(260px,70vw);border:1px solid var(--grey-300);border-radius:9px;background:#fff;padding:.68rem .8rem}
 .store-status-message{width:100%;margin:0;color:var(--green-700);font-size:.88rem}
 .store-status-message.is-error{color:var(--red)}
+.store-confirm-backdrop{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:1rem;background:rgba(12,24,16,.56);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.store-confirm-backdrop[hidden]{display:none}
+.store-confirm-dialog{width:min(440px,100%);padding:1.6rem;border-radius:16px;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.3)}
+.store-confirm-dialog h2{margin:0 0 .65rem;color:var(--green-900)}
+.store-confirm-dialog p{margin:0;color:var(--grey-700);line-height:1.55}
+.store-confirm-actions{display:flex;justify-content:flex-end;gap:.7rem;margin-top:1.5rem}
 @media(max-width:760px){.report-grid{grid-template-columns:1fr}}
 @media print{
   body{background:#fff!important}
@@ -186,6 +192,16 @@ require __DIR__ . '/includes/header.php';
     </button>
   </form>
 </section>
+<div class="store-confirm-backdrop" id="storeConfirmModal" hidden>
+  <section class="store-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="storeConfirmTitle" aria-describedby="storeConfirmMessage" tabindex="-1">
+    <h2 id="storeConfirmTitle">Konfirmasi perubahan toko</h2>
+    <p id="storeConfirmMessage"></p>
+    <div class="store-confirm-actions">
+      <button class="btn btn--secondary" id="storeConfirmNo" type="button">Tidak</button>
+      <button class="btn btn--primary" id="storeConfirmYes" type="button">Ya</button>
+    </div>
+  </section>
+</div>
 <section class="report-controls print-hide" aria-label="Filter periode laporan">
   <div class="report-tabs">
     <a href="?periode=hari" class="<?php echo $period === 'hari' ? 'is-active' : ''; ?>">Harian</a>
@@ -270,19 +286,79 @@ var storeStatusForm = document.getElementById('storeStatusForm');
 var storeStatusButton = document.getElementById('storeStatusButton');
 var storeActivityInput = document.getElementById('storeActivity');
 var storeStatusMessage = document.getElementById('storeStatusMessage');
-storeStatusForm.addEventListener('submit', function (event) {
-  event.preventDefault();
-  var willOpen = storeStatusButton.dataset.nextOpen === '1';
-  var activity = storeActivityInput.value.trim();
-  if (!willOpen && !activity) {
-    storeStatusMessage.textContent = 'Isi keterangan aktivitas sebelum menutup toko.';
-    storeStatusMessage.classList.add('is-error');
-    storeStatusMessage.hidden = false;
-    storeActivityInput.focus();
-    return;
+var storeConfirmModal = document.getElementById('storeConfirmModal');
+var storeConfirmMessage = document.getElementById('storeConfirmMessage');
+var storeConfirmYes = document.getElementById('storeConfirmYes');
+var storeConfirmNo = document.getElementById('storeConfirmNo');
+var pendingStoreStatusChange = null;
+var storeConfirmPreviousFocus = null;
+var storeConfirmScrollState = null;
+
+function lockStoreConfirmPage() {
+  var body = document.body;
+  var scrollY = window.scrollY;
+  storeConfirmScrollState = {
+    scrollY: scrollY,
+    position: body.style.position,
+    top: body.style.top,
+    left: body.style.left,
+    right: body.style.right,
+    width: body.style.width
+  };
+  body.style.position = 'fixed';
+  body.style.top = '-' + scrollY + 'px';
+  body.style.left = '0';
+  body.style.right = '0';
+  body.style.width = '100%';
+}
+
+function unlockStoreConfirmPage() {
+  if (!storeConfirmScrollState) return;
+  var body = document.body;
+  var previous = storeConfirmScrollState;
+  storeConfirmScrollState = null;
+  body.style.position = previous.position;
+  body.style.top = previous.top;
+  body.style.left = previous.left;
+  body.style.right = previous.right;
+  body.style.width = previous.width;
+  window.scrollTo(0, previous.scrollY);
+}
+
+function closeStoreConfirm(confirmed) {
+  var onConfirm = pendingStoreStatusChange;
+  pendingStoreStatusChange = null;
+  storeConfirmModal.hidden = true;
+  unlockStoreConfirmPage();
+  if (storeConfirmPreviousFocus) storeConfirmPreviousFocus.focus();
+  if (confirmed && onConfirm) onConfirm();
+}
+
+function openStoreConfirm(willOpen, onConfirm) {
+  pendingStoreStatusChange = onConfirm;
+  storeConfirmPreviousFocus = document.activeElement;
+  storeConfirmMessage.textContent = willOpen
+    ? 'Toko akan dibuka dan mulai menerima pesanan baru. Apakah kamu yakin?'
+    : 'Toko akan ditutup dan pesanan baru dihentikan. Apakah kamu yakin?';
+  storeConfirmYes.textContent = 'Ya';
+  lockStoreConfirmPage();
+  storeConfirmModal.hidden = false;
+  storeConfirmNo.focus();
+}
+
+storeConfirmYes.addEventListener('click', function () { closeStoreConfirm(true); });
+storeConfirmNo.addEventListener('click', function () { closeStoreConfirm(false); });
+storeConfirmModal.addEventListener('keydown', function (event) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeStoreConfirm(false);
+  } else if (event.key === 'Tab') {
+    event.preventDefault();
+    (document.activeElement === storeConfirmNo ? storeConfirmYes : storeConfirmNo).focus();
   }
-  if (!willOpen && !window.confirm('Tutup toko dan hentikan penerimaan pesanan baru?')) return;
-  if (willOpen && !window.confirm('Buka toko dan mulai menerima pesanan baru?')) return;
+});
+
+function updateStoreStatus(willOpen, activity) {
   storeStatusButton.disabled = true;
   storeStatusMessage.hidden = true;
   fetch('api/update_store_status.php', {
@@ -319,6 +395,20 @@ storeStatusForm.addEventListener('submit', function (event) {
       storeStatusMessage.hidden = false;
     })
     .finally(function () { storeStatusButton.disabled = false; });
+}
+
+storeStatusForm.addEventListener('submit', function (event) {
+  event.preventDefault();
+  var willOpen = storeStatusButton.dataset.nextOpen === '1';
+  var activity = storeActivityInput.value.trim();
+  if (!willOpen && !activity) {
+    storeStatusMessage.textContent = 'Isi keterangan aktivitas sebelum menutup toko.';
+    storeStatusMessage.classList.add('is-error');
+    storeStatusMessage.hidden = false;
+    storeActivityInput.focus();
+    return;
+  }
+  openStoreConfirm(willOpen, function () { updateStoreStatus(willOpen, activity); });
 });
 setTimeout(function () { window.location.reload(); }, 60000);
 </script>

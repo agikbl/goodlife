@@ -5,7 +5,8 @@
         "kategori": "kebab",
         "harga": 7000,
         "favorit": false,
-        "tersedia": true
+        "tersedia": true,
+        "gambar": "assets/menu/ee011a77636c17c8ba0506ef1280dabe.jpg"
     },
     {
         "id": "keb2",
@@ -13,210 +14,269 @@
         "kategori": "kebab",
         "harga": 7000,
         "favorit": false,
-        "tersedia": true
+        "tersedia": true,
+        "gambar": "assets/menu/8f660891a78b1d2c0349bbb265429dcf.jpg"
     },
     {
         "id": "keb3",
         "nama": "Kebab Sosis",
         "kategori": "kebab",
         "harga": 8000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/62b45ca44deda0e74fad31a00c5c37f7.jpg"
     },
     {
         "id": "keb4",
         "nama": "Kebab Mix",
         "kategori": "kebab",
         "harga": 10000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/fce5b3b47efb62dff6a95e2153c8279e.jpg"
     },
     {
         "id": "keb5",
         "nama": "Kebab Crispy",
         "kategori": "kebab",
         "harga": 13000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/88ebad4a23d6d3fcc693b0b9ed226020.jpg"
     },
     {
         "id": "keb6",
         "nama": "Kebab Beef",
         "kategori": "kebab",
         "harga": 15000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/bb1fb62f016c233455e6393b8bbd331d.jpg"
     },
     {
         "id": "keb7",
         "nama": "Kebab Ayam",
         "kategori": "kebab",
         "harga": 20000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/2dec2e9679efe4c1bed84be093c864e6.jpg"
     },
     {
         "id": "keb8",
         "nama": "Kebab Beef Moza",
         "kategori": "kebab",
         "harga": 22000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/432ce1223c2ab222ba135a28ff21dd70.jpg"
     },
     {
         "id": "kpi1",
         "nama": "Kebab Pisang Cocho Crunchy",
         "kategori": "kebab_pisang",
         "harga": 12000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/5656dae2b6cded721371689e79b0ae6d.jpg"
     },
     {
         "id": "kpi2",
         "nama": "Kebab Pisang Coklat Keju",
         "kategori": "kebab_pisang",
         "harga": 14000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/802d45b47d4cd1a5eebd6e59ccb8187c.jpg"
     },
     {
         "id": "kpi3",
         "nama": "Kebab Pisang Tiramisu",
         "kategori": "kebab_pisang",
         "harga": 12000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/b14f0fae29eff56b853612f73b889894.jpg"
     },
     {
         "id": "pis1",
         "nama": "Piscok Coklat",
         "kategori": "piscok",
         "harga": 12000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/3b2439b6b3c2a0977d364ba1b1134adc.jpg"
     },
     {
         "id": "pis2",
         "nama": "Piscok Coklat Keju",
         "kategori": "piscok",
         "harga": 14000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/7020186bdd89b8e9ec3fdd4debeaac36.jpg"
     },
     {
         "id": "pis3",
         "nama": "Piscok Tiramisyu",
         "kategori": "piscok",
         "harga": 12000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/93d45aa979f26dbeb951b93446600b9c.jpg"
     },
     {
         "id": "pis4",
         "nama": "Piscok Coklat Milo",
         "kategori": "piscok",
         "harga": 14000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/63fefe9f959a82f2e971e302acd1f6e9.jpg"
     },
     {
         "id": "bur1",
         "nama": "Burger Ori",
         "kategori": "burger",
         "harga": 7000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/2633b454765626d8ac2089db15a5909a.jpg"
     },
     {
         "id": "bur2",
         "nama": "Burger Crispy",
         "kategori": "burger",
         "harga": 15000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/705a83fb23b78add00633689fcf86915.jpg"
     },
     {
         "id": "bur3",
         "nama": "Burger Crispy Hot Spicy BBQ",
         "kategori": "burger",
         "harga": 17000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/8e812e5fe3d81f716595710cff560eff.jpg"
     },
     {
         "id": "bur4",
         "nama": "Burger Ayam",
         "kategori": "burger",
         "harga": 18000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/47b78995cd74e62ffb34a37eaf45ef31.jpg"
     },
     {
         "id": "bur5",
         "nama": "Burger Sosis",
         "kategori": "burger",
         "harga": 15000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/94973d42d0bff09ae3db174ffbd71b7b.jpg"
     },
     {
         "id": "bur6",
         "nama": "Burger Beef",
         "kategori": "burger",
         "harga": 18000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/4889408158e23784b54ac81696f30a78.jpg"
     },
     {
         "id": "bur7",
         "nama": "Burger Beef Mozarellah",
         "kategori": "burger",
         "harga": 22000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/722826a7cfce29c205b5cd4ded9719cd.jpg"
     },
     {
         "id": "cem1",
         "nama": "Good Platter",
         "kategori": "cemilan_series",
         "harga": 27000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/15bc3fc9def931500dd39a6a556526fd.jpg"
     },
     {
         "id": "cem2",
         "nama": "Kentang Goreng",
         "kategori": "cemilan_series",
         "harga": 13000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/1e6b3d98da6764782b561baef8fcb4b0.jpg"
     },
     {
         "id": "cem3",
         "nama": "Otak-otak Goreng",
         "kategori": "cemilan_series",
         "harga": 15000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/9f1927996aaba4c40d785ac2dba8341e.jpg"
     },
     {
         "id": "cem4",
         "nama": "Pangsit Goreng",
         "kategori": "cemilan_series",
         "harga": 15000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/69d5ad6dff702ea2f7da413aa162967f.jpg"
     },
     {
         "id": "cem5",
         "nama": "Tekker Coklat",
         "kategori": "cemilan_series",
         "harga": 7000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/cd1ead478388939ee4d95ab7c9c05d75.jpg"
     },
     {
         "id": "cem6",
         "nama": "Tekker Coklat Keju",
         "kategori": "cemilan_series",
         "harga": 8000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/569d81935ee13b7eb428038c132e62d1.jpg"
     },
     {
         "id": "cem7",
         "nama": "Tekker Tiramisyu",
         "kategori": "cemilan_series",
         "harga": 7000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/779b143ea30bfd3ffa0e37048da10952.jpg"
     },
     {
         "id": "nas1",
         "nama": "Nasi Ikan Suwir Kemangi",
         "kategori": "aneka_nasi",
         "harga": 15000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/cd94bcacf68418a98480b5ead8622e42.jpg"
     },
     {
         "id": "nas2",
         "nama": "Nasi Ayam Suwir Kemangi",
         "kategori": "aneka_nasi",
         "harga": 15000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/b92831fe57cf8b9d3d19f46350588b97.jpg"
     },
     {
         "id": "topm1",
@@ -321,35 +381,45 @@
         "nama": "Coffee Blend",
         "kategori": "basic_coffee",
         "harga": 15000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/e18cf5e7f13237cd98d432ef31c5ab8a.jpg"
     },
     {
         "id": "cof2",
         "nama": "Ice Coffe Gula Aren",
         "kategori": "basic_coffee",
         "harga": 15000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/f9a4570b1ded30e50f7be77bd8213f9b.jpg"
     },
     {
         "id": "cof3",
         "nama": "Ice Creamy Coffe",
         "kategori": "basic_coffee",
         "harga": 15000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/4675f065a67520ce39da83e2ed4cbf61.jpg"
     },
     {
         "id": "cof4",
         "nama": "Coffe Caramel",
         "kategori": "basic_coffee",
         "harga": 13000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/052e40c970c068b7e7c18da486d08a70.jpg"
     },
     {
         "id": "cof5",
         "nama": "Cappucino",
         "kategori": "basic_coffee",
         "harga": 13000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/6597cbb8d881aebd2e1f0a49c59a21bb.jpg"
     },
     {
         "id": "tea1",
@@ -384,28 +454,36 @@
         "nama": "Milky Strawberry",
         "kategori": "signature_series",
         "harga": 15000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/9d62dc89dd83ab5f12a2cf25208e71e3.png"
     },
     {
         "id": "sig2",
         "nama": "Milky Blueberry",
         "kategori": "signature_series",
         "harga": 15000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/7a0fcf4f71fd47ee81dc5f00e7f89fef.jpg"
     },
     {
         "id": "sig3",
         "nama": "Milky Oreo",
         "kategori": "signature_series",
         "harga": 15000,
-        "favorit": false
+        "favorit": false,
+        "tersedia": true,
+        "gambar": "assets/menu/d8e6018760ce479812ba9a6c4793b2ff.jpg"
     },
     {
         "id": "sig4",
         "nama": "Choco Lava Milo",
         "kategori": "signature_series",
         "harga": 15000,
-        "favorit": true
+        "favorit": true,
+        "tersedia": true,
+        "gambar": "assets/menu/7e493f3d38a3dbdc387db49add31d8fa.jpg"
     },
     {
         "id": "topd1",

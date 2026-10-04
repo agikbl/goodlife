@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../database/repository.php';
 header('Content-Type: application/json; charset=utf-8');
 
 function support_response($status, $payload)
@@ -29,45 +30,15 @@ if ($nama === '' || strlen($nama) > 100 || $kontak === '' || strlen($kontak) > 1
     support_response(400, ['ok' => false, 'error' => 'Lengkapi semua kolom dan pastikan panjang isian valid.']);
 }
 
-$path = __DIR__ . '/../data/support_messages.json';
-$file = fopen($path, 'c+');
-if ($file === false) {
-    error_log('Support message storage could not be opened.');
-    support_response(500, ['ok' => false, 'error' => 'Pesan gagal disimpan. Coba lagi nanti.']);
-}
-if (!flock($file, LOCK_EX)) {
-    fclose($file);
-    error_log('Support message storage could not be locked.');
-    support_response(500, ['ok' => false, 'error' => 'Penyimpanan pesan sedang tidak tersedia. Coba lagi nanti.']);
-}
-
-$content = stream_get_contents($file);
-$messages = $content === '' ? [] : json_decode($content, true);
-if (!is_array($messages)) {
-    flock($file, LOCK_UN);
-    fclose($file);
-    error_log('Support message storage contains invalid JSON.');
-    support_response(500, ['ok' => false, 'error' => 'Data pesan tidak dapat dibaca. Hubungi admin.']);
-}
-
-$messages[] = [
-    'nama' => htmlspecialchars($nama, ENT_QUOTES, 'UTF-8'),
-    'kontak' => htmlspecialchars($kontak, ENT_QUOTES, 'UTF-8'),
-    'kategori' => htmlspecialchars($kategori, ENT_QUOTES, 'UTF-8'),
-    'pesan' => htmlspecialchars($pesan, ENT_QUOTES, 'UTF-8'),
-    'status' => 'Baru',
-    'tanggal' => date('Y-m-d H:i'),
-];
-$encoded = json_encode($messages, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-$serialized = $encoded === false ? false : $encoded . PHP_EOL;
-$saved = $serialized !== false && rewind($file) &&
-    fwrite($file, $serialized) === strlen($serialized) &&
-    ftruncate($file, strlen($serialized)) && fflush($file);
-flock($file, LOCK_UN);
-fclose($file);
-
-if (!$saved) {
-    error_log('Support message could not be fully written to storage.');
+try {
+    goodlife_db_insert_support_message([
+        'nama' => $nama,
+        'kontak' => $kontak,
+        'kategori' => $kategori,
+        'pesan' => $pesan,
+    ]);
+} catch (Throwable $error) {
+    error_log('Support message database write failed: ' . $error->getMessage());
     support_response(500, ['ok' => false, 'error' => 'Pesan gagal disimpan. Coba lagi nanti.']);
 }
 

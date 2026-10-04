@@ -1,12 +1,13 @@
 <?php
 // pesan.php — Halaman pemesanan customer (semua digabung: HTML, CSS, JS, PHP)
+require_once __DIR__ . '/database/repository.php';
 
 $storeDefaults = ['wa' => '6285173087797'];
-$storeConfig = json_decode(file_get_contents(__DIR__ . '/data/store.json'), true);
+$storeConfig = goodlife_db_store();
 $toko = is_array($storeConfig) ? array_merge($storeDefaults, $storeConfig) : $storeDefaults;
 $storeIsOpen = !array_key_exists('is_open', $toko) || $toko['is_open'] === true;
 $storeActivity = is_string($toko['activity'] ?? null) ? $toko['activity'] : 'Tutup sementara';
-$menu = json_decode(file_get_contents(__DIR__ . '/data/menu.json'), true) ?: [];
+$menu = goodlife_db_products();
 $menu = array_map(function ($item) {
     $item['tersedia'] = !array_key_exists('tersedia', $item) || (bool)$item['tersedia'];
     return $item;
@@ -19,7 +20,7 @@ elseif ($jam >= 11 && $jam < 15)  { $sapaan = 'Selamat siang'; $sub = 'Waktunya 
 elseif ($jam >= 15 && $jam < 18)  { $sapaan = 'Selamat sore';  $sub = 'Sore-sore gini paling pas ngemil kebab hangat.'; }
 else                              { $sapaan = 'Selamat malam'; $sub = 'Lapar tengah malam? Tenang, kami masih buka.'; }
 
-$categoryConfig = json_decode(file_get_contents(__DIR__ . '/data/categories.json'), true);
+$categoryConfig = goodlife_db_categories();
 $categoryRecords = is_array($categoryConfig) ? array_values(array_filter($categoryConfig, function ($category) {
     return is_array($category) && isset($category['id'], $category['nama']) &&
         in_array($category['kelompok'] ?? '', ['makanan', 'minuman'], true);
@@ -260,6 +261,12 @@ body.is-store-closed .menu-card{opacity:.62;cursor:not-allowed}
 .cek-modal.is-open{display:block;}
 .cek-modal__head{padding:1.3rem 1.5rem 0.5rem; display:flex; align-items:center; justify-content:space-between;}
 .cek-modal__body{padding:0.5rem 1.5rem 1.6rem;}
+.store-closed-modal{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:1rem;background:rgba(22,50,31,.58);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.store-closed-modal[hidden]{display:none}
+.store-closed-modal__card{width:min(440px,100%);padding:1.7rem;border-radius:var(--radius);background:var(--white);box-shadow:0 20px 60px rgba(0,0,0,.28);text-align:center}
+.store-closed-modal__card h2{margin:0 0 .7rem;color:var(--green-900)}
+.store-closed-modal__card p{margin:0;color:var(--grey-700);line-height:1.55}
+.store-closed-modal__action{margin-top:1.4rem}
 .cek-search{display:flex; gap:0.6rem; margin-bottom:0.4rem;}
 .cek-search input{flex:1; border:1px solid var(--grey-300); border-radius:10px; padding:0.75rem 0.9rem; font-family:var(--font-body); font-size:0.92rem;}
 .cek-hint{font-size:0.78rem; color:var(--grey-500); margin:0 0 1.2rem;}
@@ -455,12 +462,21 @@ body.is-store-closed .menu-card{opacity:.62;cursor:not-allowed}
   </div>
 </div>
 
+<div class="store-closed-modal" id="storeClosedModal" hidden>
+  <section class="store-closed-modal__card" role="alertdialog" aria-modal="true" aria-labelledby="storeClosedTitle" aria-describedby="storeClosedMessage" tabindex="-1">
+    <h2 id="storeClosedTitle">Toko Sedang Tutup</h2>
+    <p id="storeClosedMessage"></p>
+    <button class="btn btn--solid store-closed-modal__action" id="storeClosedDismiss" type="button">Pesan Nanti</button>
+  </section>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
   /* ================= State ================= */
   var cart = []; // { id, nama, harga, qty, notes }
   var storeIsOpen = <?php echo $storeIsOpen ? 'true' : 'false'; ?>;
+  var storeActivity = <?php echo json_encode($storeActivity, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
   var currentItem = null; // item yang lagi dibuka di modal
   var currentQty = 1;
   var currentToppings = [];
@@ -546,6 +562,38 @@ document.addEventListener('DOMContentLoaded', function () {
     document.documentElement.style.scrollBehavior = previous.scrollBehavior;
   }
 
+  var storeClosedModal = document.getElementById('storeClosedModal');
+  var storeClosedMessage = document.getElementById('storeClosedMessage');
+  var storeClosedDismiss = document.getElementById('storeClosedDismiss');
+  var storeClosedPreviousFocus = null;
+
+  function showStoreClosedNotice(message) {
+    storeClosedPreviousFocus = document.activeElement;
+    storeClosedMessage.textContent = message || 'Toko sedang tutup sementara (' + storeActivity + ') dan belum menerima pesanan baru. Silakan pesan nanti.';
+    storeClosedModal.hidden = false;
+    lockPageScroll();
+    storeClosedDismiss.focus();
+  }
+
+  function closeStoreClosedNotice() {
+    storeClosedModal.hidden = true;
+    unlockPageScroll();
+    if (storeClosedPreviousFocus && storeClosedPreviousFocus.isConnected) {
+      storeClosedPreviousFocus.focus();
+    }
+  }
+
+  storeClosedDismiss.addEventListener('click', closeStoreClosedNotice);
+  storeClosedModal.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeStoreClosedNotice();
+    } else if (event.key === 'Tab') {
+      event.preventDefault();
+      storeClosedDismiss.focus();
+    }
+  });
+
   function syncSelectedCards() {
     cards.forEach(function (card) {
       var isSelected = cart.some(function (item) { return item.id === card.dataset.id; });
@@ -606,7 +654,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   cards.forEach(function (card) {
     card.addEventListener('click', function () {
-      if (!storeIsOpen) return;
+      if (!storeIsOpen) {
+        showStoreClosedNotice();
+        return;
+      }
       if (card.dataset.available === '0') return;
       currentItem = {
         id: card.dataset.id,
@@ -772,7 +823,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('btnLanjutBayar').addEventListener('click', function () {
     if (cart.length === 0) return;
     if (!storeIsOpen) {
-      window.alert('Toko sedang tutup sementara dan belum menerima pesanan baru.');
+      showStoreClosedNotice();
       return;
     }
     var button = document.getElementById('btnLanjutBayar');
@@ -785,7 +836,11 @@ document.addEventListener('DOMContentLoaded', function () {
     })
       .then(function (response) {
         return response.json().then(function (data) {
-          if (!response.ok || !data.ok) throw new Error(data.error || 'Gagal menyiapkan pembayaran.');
+          if (!response.ok || !data.ok) {
+            var error = new Error(data.error || 'Gagal menyiapkan pembayaran.');
+            error.status = response.status;
+            throw error;
+          }
           return data;
         });
       })
@@ -793,6 +848,12 @@ document.addEventListener('DOMContentLoaded', function () {
       .catch(function (error) {
         button.disabled = false;
         button.textContent = 'Lanjut ke Pembayaran';
+        if (error.status === 423) {
+          storeIsOpen = false;
+          document.body.classList.add('is-store-closed');
+          showStoreClosedNotice(error.message);
+          return;
+        }
         window.alert(error.message || 'Terjadi kesalahan jaringan, coba lagi.');
       });
   });

@@ -1,5 +1,6 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/../database/repository.php';
 
 function review_response($status, $payload)
 {
@@ -37,77 +38,14 @@ if (!preg_match('/^ORD[0-9]{9,}$/', $orderId) ||
     review_response(400, ['ok' => false, 'error' => 'ID pesanan, nomor WhatsApp, rating, atau komentar tidak valid.']);
 }
 
-$ordersContent = file_get_contents(__DIR__ . '/../data/orders.json');
-$orders = $ordersContent === false ? null : json_decode($ordersContent, true);
-if (!is_array($orders)) {
-    review_response(500, ['ok' => false, 'error' => 'Data pesanan tidak dapat dibaca.']);
-}
-
-$eligibleOrder = null;
-foreach ($orders as $order) {
-    if (!is_array($order) || strtoupper((string)($order['id'] ?? '')) !== $orderId) {
-        continue;
-    }
-    $storedWhatsApp = preg_replace('/\D+/', '', (string)($order['whatsapp'] ?? ''));
-    if (strpos($storedWhatsApp, '0') === 0) {
-        $storedWhatsApp = '62' . substr($storedWhatsApp, 1);
-    } elseif (strpos($storedWhatsApp, '8') === 0) {
-        $storedWhatsApp = '62' . $storedWhatsApp;
-    }
-    if ($storedWhatsApp !== $whatsapp) {
-        review_response(404, ['ok' => false, 'error' => 'Pesanan tidak ditemukan untuk nomor WhatsApp tersebut.']);
-    }
-    if (($order['status'] ?? '') !== 'Selesai') {
-        review_response(409, ['ok' => false, 'error' => 'Ulasan hanya dapat dikirim setelah pesanan selesai.']);
-    }
-    $eligibleOrder = $order;
-    break;
-}
-if ($eligibleOrder === null) {
-    review_response(404, ['ok' => false, 'error' => 'Pesanan tidak ditemukan.']);
-}
-
-$file = fopen(__DIR__ . '/../data/reviews.json', 'c+');
-if ($file === false) {
+try {
+    $review = goodlife_db_review_order($orderId, $whatsapp, $rating, $comment);
+    review_response(200, ['ok' => true, 'review' => $review]);
+} catch (OutOfBoundsException $error) {
+    review_response(404, ['ok' => false, 'error' => $error->getMessage()]);
+} catch (DomainException $error) {
+    review_response(409, ['ok' => false, 'already_reviewed' => true, 'error' => $error->getMessage()]);
+} catch (Throwable $error) {
+    error_log('Customer review submission failed: ' . $error->getMessage());
     review_response(500, ['ok' => false, 'error' => 'Ulasan gagal disimpan. Coba lagi.']);
 }
-if (!flock($file, LOCK_EX)) {
-    fclose($file);
-    review_response(500, ['ok' => false, 'error' => 'Data ulasan gagal dikunci. Coba lagi.']);
-}
-
-$content = stream_get_contents($file);
-$reviews = $content === '' ? [] : json_decode($content, true);
-if (!is_array($reviews)) {
-    flock($file, LOCK_UN);
-    fclose($file);
-    review_response(500, ['ok' => false, 'error' => 'Data ulasan tidak valid.']);
-}
-foreach ($reviews as $review) {
-    if (is_array($review) && strtoupper((string)($review['order_id'] ?? '')) === $orderId) {
-        flock($file, LOCK_UN);
-        fclose($file);
-        review_response(409, ['ok' => false, 'already_reviewed' => true, 'error' => 'Pesanan ini sudah pernah diberi ulasan.']);
-    }
-}
-
-$newReview = [
-    'order_id' => $orderId,
-    'nama' => (string)($eligibleOrder['nama_pemesan'] ?? 'Pelanggan Good Life'),
-    'rating' => $rating,
-    'komentar' => $comment,
-    'tanggal' => date('Y-m-d'),
-];
-$reviews[] = $newReview;
-$encoded = json_encode($reviews, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-$saved = $encoded !== false && rewind($file) &&
-    fwrite($file, $encoded . PHP_EOL) === strlen($encoded . PHP_EOL) &&
-    ftruncate($file, strlen($encoded . PHP_EOL)) && fflush($file);
-flock($file, LOCK_UN);
-fclose($file);
-
-if (!$saved) {
-    review_response(500, ['ok' => false, 'error' => 'Ulasan gagal disimpan. Coba lagi.']);
-}
-
-review_response(200, ['ok' => true, 'review' => $newReview]);

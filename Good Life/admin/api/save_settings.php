@@ -7,18 +7,6 @@ function settings_error($message, $status = 400)
     admin_json_response(['ok' => false, 'error' => $message], $status);
 }
 
-function remove_gallery_image($image)
-{
-    if (!is_string($image) || !preg_match('#^assets/gallery/[a-f0-9]{32}\.(jpg|png|webp)$#', $image)) {
-        return false;
-    }
-    $path = ADMIN_ROOT . $image;
-    if (is_file($path) && !unlink($path)) {
-        throw new RuntimeException('File foto galeri gagal dihapus.');
-    }
-    return true;
-}
-
 $isJson = stripos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false;
 $input = $isJson ? json_decode(file_get_contents('php://input'), true) : $_POST;
 if (!is_array($input)) settings_error('Data pengaturan tidak valid.');
@@ -26,15 +14,10 @@ if (!is_array($input)) settings_error('Data pengaturan tidak valid.');
 if (($input['action'] ?? '') === 'delete_gallery') {
     $image = (string)($input['image'] ?? '');
     try {
-        $deleted = admin_mutate_json('data/store.json', function (&$store) use ($image) {
-            $gallery = is_array($store['gallery'] ?? null) ? $store['gallery'] : [];
-            $index = array_search($image, $gallery, true);
-            if ($index === false) throw new OutOfBoundsException('Foto galeri tidak ditemukan.');
-            array_splice($gallery, $index, 1);
-            $store['gallery'] = $gallery;
-            return $image;
-        });
-        if (!remove_gallery_image($deleted)) settings_error('Path foto galeri tidak valid.', 400);
+        if (!preg_match('#^assets/gallery/[a-f0-9]{32}\.(jpg|png|webp)$#', $image)) {
+            settings_error('Path foto galeri tidak valid.', 400);
+        }
+        goodlife_db_delete_gallery_image($image);
         admin_json_response(['ok' => true]);
     } catch (OutOfBoundsException $error) {
         settings_error($error->getMessage(), 404);
@@ -51,7 +34,7 @@ if (strpos($whatsapp, '0') === 0) $whatsapp = '62' . substr($whatsapp, 1);
 if (strpos($whatsapp, '8') === 0) $whatsapp = '62' . $whatsapp;
 $open = (string)($input['jam_buka'] ?? '');
 $close = (string)($input['jam_tutup'] ?? '');
-if ($name === '' || strlen($name) > 300 || $address === '' || strlen($address) > 900 ||
+if ($name === '' || strlen($name) > 100 || $address === '' || strlen($address) > 900 ||
     !preg_match('/^628[0-9]{7,11}$/', $whatsapp) ||
     !preg_match('/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/', $open) ||
     !preg_match('/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/', $close)) {
@@ -75,43 +58,44 @@ if (is_array($files) && isset($files['name']) && is_array($files['name'])) {
         if (!isset($extensions[$mime]) || !$dimensions || $dimensions[0] > 6000 || $dimensions[1] > 6000) {
             settings_error('Foto galeri harus JPG, PNG, atau WebP dengan dimensi maksimal 6000×6000.');
         }
-        $uploads[] = ['tmp_name' => $tmpName, 'extension' => $extensions[$mime]];
+        $uploads[] = ['tmp_name' => $tmpName, 'extension' => $extensions[$mime], 'mime' => $mime];
     }
 }
 
-$directory = ADMIN_ROOT . 'assets/gallery';
-if ($uploads && !is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
-    settings_error('Folder galeri gagal disiapkan.', 500);
-}
 $storedImages = [];
-foreach ($uploads as $upload) {
-    $filename = bin2hex(random_bytes(16)) . '.' . $upload['extension'];
-    if (!move_uploaded_file($upload['tmp_name'], $directory . '/' . $filename)) {
-        foreach ($storedImages as $storedImage) remove_gallery_image($storedImage);
-        settings_error('Foto galeri gagal disimpan.', 500);
+try {
+    foreach ($uploads as $upload) {
+        $filename = bin2hex(random_bytes(16)) . '.' . $upload['extension'];
+        $imagePath = 'assets/gallery/' . $filename;
+        goodlife_db_save_media($imagePath, $upload['tmp_name'], $upload['mime']);
+        $storedImages[] = $imagePath;
     }
-    $storedImages[] = 'assets/gallery/' . $filename;
+} catch (Throwable $error) {
+    foreach ($storedImages as $storedImage) {
+        goodlife_db_delete_media_if_unreferenced($storedImage);
+    }
+    error_log('Admin gallery image database save failed: ' . $error->getMessage());
+    settings_error('Foto galeri gagal disimpan ke database.', 500);
 }
 
 try {
-    admin_mutate_json('data/store.json', function (&$store) use ($name, $address, $whatsapp, $open, $close, $storedImages) {
-        $gallery = is_array($store['gallery'] ?? null) ? $store['gallery'] : [];
-        if (count($gallery) + count($storedImages) > 10) {
-            throw new LengthException('Galeri maksimal berisi 10 foto.');
-        }
-        $store['nama'] = $name;
-        $store['alamat'] = $address;
-        $store['wa'] = $whatsapp;
-        $store['jam_buka'] = $open;
-        $store['jam_tutup'] = $close;
-        $store['gallery'] = array_merge($gallery, $storedImages);
-    });
+    goodlife_db_save_store([
+        'nama' => $name,
+        'alamat' => $address,
+        'wa' => $whatsapp,
+        'jam_buka' => $open,
+        'jam_tutup' => $close,
+    ], $storedImages);
     admin_json_response(['ok' => true]);
 } catch (LengthException $error) {
-    foreach ($storedImages as $storedImage) remove_gallery_image($storedImage);
+    foreach ($storedImages as $storedImage) {
+        goodlife_db_delete_media_if_unreferenced($storedImage);
+    }
     settings_error($error->getMessage(), 400);
 } catch (Throwable $error) {
     error_log('Admin store settings update failed: ' . $error->getMessage());
-    foreach ($storedImages as $storedImage) remove_gallery_image($storedImage);
+    foreach ($storedImages as $storedImage) {
+        goodlife_db_delete_media_if_unreferenced($storedImage);
+    }
     settings_error('Pengaturan toko gagal disimpan.', 500);
 }

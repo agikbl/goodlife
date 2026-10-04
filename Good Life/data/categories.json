@@ -1,22 +1,22 @@
 [
     {
-        "id": "kebab",
-        "nama": "Kebab",
-        "kelompok": "makanan"
-    },
-    {
         "id": "burger",
         "nama": "Burger",
         "kelompok": "makanan"
     },
     {
-        "id": "kebab_pisang",
-        "nama": "Kebab Pisang",
+        "id": "kebab",
+        "nama": "Kebab",
         "kelompok": "makanan"
     },
     {
         "id": "piscok",
         "nama": "Piscok",
+        "kelompok": "makanan"
+    },
+    {
+        "id": "kebab_pisang",
+        "nama": "Kebab Pisang",
         "kelompok": "makanan"
     },
     {

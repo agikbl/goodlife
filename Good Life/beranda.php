@@ -1,5 +1,6 @@
 <?php
 // beranda.php — Halaman utama sisi customer (semua digabung: HTML, CSS, JS, PHP)
+require_once __DIR__ . '/database/repository.php';
 
 $storeDefaults = [
     'nama'      => 'Good Life Parepare',
@@ -9,11 +10,10 @@ $storeDefaults = [
     'wa'        => '6285173087797',
     'gallery'   => [],
 ];
-$storeConfig = json_decode(file_get_contents(__DIR__ . '/data/store.json'), true);
+$storeConfig = goodlife_db_store();
 $toko = is_array($storeConfig) ? array_merge($storeDefaults, $storeConfig) : $storeDefaults;
 
-$reviewsPath = __DIR__ . '/data/reviews.json';
-$reviews = json_decode(file_get_contents($reviewsPath), true) ?: [];
+$reviews = goodlife_db_reviews();
 
 $avg = 0;
 if (count($reviews) > 0) {
@@ -249,7 +249,7 @@ img{max-width:100%; display:block;}
   </div>
   <div class="store-gallery__track" id="galleryTrack">
     <?php foreach ($toko['gallery'] as $image): ?>
-      <img src="<?php echo htmlspecialchars($image, ENT_QUOTES, 'UTF-8'); ?>" alt="Galeri Good Life" loading="lazy">
+      <img src="<?php echo htmlspecialchars(goodlife_media_url($image), ENT_QUOTES, 'UTF-8'); ?>" alt="Galeri Good Life" loading="lazy">
     <?php endforeach; ?>
   </div>
 </section>

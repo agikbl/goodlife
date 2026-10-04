@@ -1,6 +1,7 @@
 <?php
 session_start();
 header('Content-Type: application/json');
+require_once __DIR__ . '/../database/repository.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -17,25 +18,20 @@ if (!is_array($items) || !$items) {
     exit;
 }
 
-$storeContent = file_get_contents(__DIR__ . '/../data/store.json');
-$store = $storeContent === false ? null : json_decode($storeContent, true);
-if (!is_array($store)) {
+try {
+    $store = goodlife_db_store();
+    $menu = goodlife_db_products();
+    $categoryRecords = goodlife_db_categories();
+} catch (Throwable $error) {
+    error_log('Checkout database read failed: ' . $error->getMessage());
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Status toko tidak dapat dibaca. Silakan coba lagi nanti.']);
+    echo json_encode(['ok' => false, 'error' => 'Data toko atau menu tidak dapat dibaca. Silakan coba lagi nanti.']);
     exit;
 }
 if (array_key_exists('is_open', $store) && $store['is_open'] !== true) {
     http_response_code(423);
     $activity = is_string($store['activity'] ?? null) ? $store['activity'] : 'Tutup sementara';
     echo json_encode(['ok' => false, 'error' => 'Toko sedang tutup (' . $activity . ') dan belum menerima pesanan baru.']);
-    exit;
-}
-
-$menuContent = file_get_contents(__DIR__ . '/../data/menu.json');
-$menu = $menuContent === false ? null : json_decode($menuContent, true);
-if (!is_array($menu)) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Data menu tidak dapat dibaca.']);
     exit;
 }
 
@@ -46,13 +42,6 @@ foreach ($menu as $menuItem) {
     }
 }
 
-$categoryContent = file_get_contents(__DIR__ . '/../data/categories.json');
-$categoryRecords = $categoryContent === false ? null : json_decode($categoryContent, true);
-if (!is_array($categoryRecords)) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Data kategori tidak dapat dibaca.']);
-    exit;
-}
 $categoryGroups = [];
 foreach ($categoryRecords as $categoryRecord) {
     if (is_array($categoryRecord) && isset($categoryRecord['id']) &&

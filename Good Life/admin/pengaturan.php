@@ -1,7 +1,7 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
 admin_require_auth();
-$store = admin_read_json('data/store.json');
+$store = admin_read_dataset('data/store.json');
 $pageTitle = 'Pengaturan';
 $activePage = 'pengaturan';
 $csrf = admin_csrf_token();
@@ -28,7 +28,7 @@ require __DIR__ . '/includes/header.php';
     <div class="gallery-grid">
       <?php foreach ($store['gallery'] as $image): ?>
         <div class="gallery-item">
-          <img src="../<?php echo admin_h($image); ?>" alt="Foto galeri toko">
+          <img src="../<?php echo admin_h(goodlife_media_url($image)); ?>" alt="Foto galeri toko">
           <button class="btn btn--danger" type="button" data-delete-gallery="<?php echo admin_h($image); ?>">Hapus foto</button>
         </div>
       <?php endforeach; ?>

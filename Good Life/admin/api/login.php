@@ -17,17 +17,46 @@ if (!empty($_SESSION['admin_login_locked_until']) && $_SESSION['admin_login_lock
 
 $username = trim((string)($_POST['username'] ?? ''));
 $password = (string)($_POST['password'] ?? '');
-$expectedUsername = getenv('ADMIN_USERNAME') ?: 'admin';
-$passwordHash = getenv('ADMIN_PASSWORD_HASH');
+$localConfigPath = ADMIN_ROOT . 'admin-config.local.php';
+$localConfig = [];
+if (is_file($localConfigPath)) {
+    $loadedConfig = require $localConfigPath;
+    if (is_array($loadedConfig)) {
+        $localConfig = $loadedConfig;
+    } else {
+        error_log('Admin login disabled: admin-config.local.php must return an array.');
+    }
+}
 
-if (!$passwordHash || !password_get_info($passwordHash)['algo']) {
-    error_log('Admin login disabled: ADMIN_PASSWORD_HASH is missing or invalid.');
-    admin_flash('Login admin belum dikonfigurasi. Atur ADMIN_PASSWORD_HASH di konfigurasi server.', 'error');
+$configuredUsername = getenv('ADMIN_USERNAME');
+$configuredPasswordHash = getenv('ADMIN_PASSWORD_HASH');
+$localUsername = $localConfig['username'] ?? 'admin';
+$localPasswordHash = $localConfig['password_hash'] ?? '';
+$expectedUsername = is_string($configuredUsername) && $configuredUsername !== ''
+    ? $configuredUsername
+    : (is_string($localUsername) && $localUsername !== '' ? $localUsername : 'admin');
+$passwordHash = is_string($configuredPasswordHash) && $configuredPasswordHash !== ''
+    ? $configuredPasswordHash
+    : (is_string($localPasswordHash) ? $localPasswordHash : '');
+
+$valid = false;
+try {
+    if (strlen($expectedUsername) > 64 || strlen($username) > 64) {
+        throw new RuntimeException('Configured admin username exceeds the database limit.');
+    }
+    $valid = goodlife_db_admin_authenticate($username, $password, $expectedUsername, $passwordHash);
+} catch (Throwable $error) {
+    error_log('Admin authentication database check failed: ' . $error->getMessage());
+    admin_flash('Login admin sedang tidak tersedia. Coba lagi nanti.', 'error');
     header('Location: ../login.php');
     exit;
 }
-
-$valid = hash_equals($expectedUsername, $username) && password_verify($password, $passwordHash);
+if ($valid === null) {
+    error_log('Admin login disabled: no SQL admin user or valid fallback password hash is configured.');
+    admin_flash('Login admin belum dikonfigurasi. Atur ADMIN_PASSWORD_HASH atau buat admin di database.', 'error');
+    header('Location: ../login.php');
+    exit;
+}
 if (!$valid) {
     $_SESSION['admin_login_attempts'] = ($_SESSION['admin_login_attempts'] ?? 0) + 1;
     if ($_SESSION['admin_login_attempts'] >= 5) {

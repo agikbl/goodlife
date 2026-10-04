@@ -20,20 +20,7 @@ try {
         if ($name === '' || strlen($name) > 60 || !in_array($group, ['makanan', 'minuman'], true)) {
             category_error('Nama kategori maksimal 60 karakter dan kelompok harus dipilih.');
         }
-        $created = admin_mutate_json('data/categories.json', function (&$categories) use ($name, $group) {
-            foreach ($categories as $category) {
-                if (strcasecmp((string)($category['nama'] ?? ''), $name) === 0) {
-                    throw new DomainException('Nama kategori sudah digunakan.');
-                }
-            }
-            $category = [
-                'id' => 'cat_' . bin2hex(random_bytes(6)),
-                'nama' => $name,
-                'kelompok' => $group,
-            ];
-            $categories[] = $category;
-            return $category;
-        });
+        $created = goodlife_db_save_category('', $name, $group);
         admin_json_response(['ok' => true, 'category' => $created]);
     }
 
@@ -45,24 +32,7 @@ try {
             !in_array($group, ['makanan', 'minuman'], true)) {
             category_error('ID, nama kategori, atau kelompok tidak valid.');
         }
-        $updated = admin_mutate_json('data/categories.json', function (&$categories) use ($id, $name, $group) {
-            foreach ($categories as $category) {
-                if (($category['id'] ?? '') !== $id && strcasecmp((string)($category['nama'] ?? ''), $name) === 0) {
-                    throw new DomainException('Nama kategori sudah digunakan.');
-                }
-            }
-            foreach ($categories as &$category) {
-                if (($category['id'] ?? '') === $id) {
-                    $category['nama'] = $name;
-                    $category['kelompok'] = $group;
-                    $result = $category;
-                    unset($category);
-                    return $result;
-                }
-            }
-            unset($category);
-            throw new OutOfBoundsException('Kategori tidak ditemukan.');
-        });
+        $updated = goodlife_db_save_category($id, $name, $group);
         admin_json_response(['ok' => true, 'category' => $updated]);
     }
 
@@ -71,21 +41,7 @@ try {
         if ($id === '' || !preg_match('/^(?:[a-z0-9_]+|cat_[a-f0-9]{12})$/', $id)) {
             category_error('ID kategori tidak valid.');
         }
-        $menu = admin_read_json('data/menu.json');
-        foreach ($menu as $item) {
-            if (is_array($item) && ($item['kategori'] ?? '') === $id) {
-                throw new DomainException('Kategori masih memiliki menu. Pindahkan atau hapus menu tersebut sebelum menghapus kategori.');
-            }
-        }
-        admin_mutate_json('data/categories.json', function (&$categories) use ($id) {
-            foreach ($categories as $index => $category) {
-                if (($category['id'] ?? '') === $id) {
-                    array_splice($categories, $index, 1);
-                    return true;
-                }
-            }
-            throw new OutOfBoundsException('Kategori tidak ditemukan.');
-        });
+        goodlife_db_delete_category($id);
         admin_json_response(['ok' => true]);
     }
 
@@ -99,36 +55,7 @@ try {
         if (!in_array($group, ['makanan', 'minuman'], true)) {
             category_error('Kelompok kategori tidak valid.');
         }
-        admin_mutate_json('data/categories.json', function (&$categories) use ($ids, $group) {
-            $groupIds = [];
-            foreach ($categories as $category) {
-                if (($category['kelompok'] ?? '') === $group) {
-                    $groupIds[] = (string)($category['id'] ?? '');
-                }
-            }
-            $expected = $groupIds;
-            sort($expected);
-            $provided = $ids;
-            sort($provided);
-            if ($provided !== $expected) {
-                throw new DomainException('Daftar kategori berubah. Muat ulang halaman lalu coba lagi.');
-            }
-            $byId = [];
-            foreach ($categories as $category) {
-                $byId[$category['id']] = $category;
-            }
-            $orderedGroup = array_map(function ($id) use ($byId) { return $byId[$id]; }, $ids);
-            $next = [];
-            $groupPosition = 0;
-            foreach ($categories as $category) {
-                if (($category['kelompok'] ?? '') === $group) {
-                    $next[] = $orderedGroup[$groupPosition++];
-                } else {
-                    $next[] = $category;
-                }
-            }
-            $categories = $next;
-        });
+        goodlife_db_reorder_categories($ids, $group);
         admin_json_response(['ok' => true]);
     }
 

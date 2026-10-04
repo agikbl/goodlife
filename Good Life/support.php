@@ -1,5 +1,6 @@
 <?php
 // support.php — Halaman bantuan/kontak pelanggan (semua digabung: HTML, CSS, JS, PHP)
+require_once __DIR__ . '/database/repository.php';
 
 $storeDefaults = [
     'alamat' => 'Jl. H. Jamil Ismail, Parepare (Perempatan Ablam, samping Waterboom)',
@@ -7,7 +8,7 @@ $storeDefaults = [
     'wa2'   => '085141368994',
     'ig'    => 'goodlife_parepare',
 ];
-$storeConfig = json_decode(file_get_contents(__DIR__ . '/data/store.json'), true);
+$storeConfig = goodlife_db_store();
 $toko = is_array($storeConfig) ? array_merge($storeDefaults, $storeConfig) : $storeDefaults;
 ?>
 <!DOCTYPE html>

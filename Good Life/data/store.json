@@ -4,8 +4,14 @@
     "jam_buka": "15:00",
     "jam_tutup": "23:00",
     "wa": "6285173087797",
-    "gallery": [],
+    "gallery": [
+        "assets/gallery/2a1330d1acf3dcb2542175e57690ffbe.png",
+        "assets/gallery/34d1588d0dddbf40877fd975e327546e.png",
+        "assets/gallery/0dc042fa3bfc1fe25b99c73f34df7eec.png",
+        "assets/gallery/590d54bc41bf92fd06eb2228d08816d0.png",
+        "assets/gallery/e6b929ec19c9ec01928742b2db6261af.png"
+    ],
     "is_open": true,
     "activity": "Menerima pesanan",
-    "status_updated_at": "2026-10-02 17:05:17"
+    "status_updated_at": "2026-10-03 15:22:42"
 }

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../database/repository.php';
 
 function admin_start_session()
 {
@@ -54,56 +55,9 @@ function admin_json_response($data, $status = 200)
     exit;
 }
 
-function admin_read_json($relativePath)
+function admin_read_dataset($relativePath)
 {
-    $path = ADMIN_ROOT . $relativePath;
-    if (!is_file($path)) {
-        throw new RuntimeException('File data tidak ditemukan: ' . $relativePath);
-    }
-    $content = file_get_contents($path);
-    $data = $content === false ? null : json_decode($content, true);
-    if (!is_array($data)) {
-        throw new RuntimeException('Format data JSON tidak valid: ' . $relativePath);
-    }
-    return $data;
-}
-
-function admin_write_json($relativePath, $data)
-{
-    $path = ADMIN_ROOT . $relativePath;
-    $encoded = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    if ($encoded === false || file_put_contents($path, $encoded . PHP_EOL, LOCK_EX) === false) {
-        throw new RuntimeException('Data gagal disimpan: ' . $relativePath);
-    }
-}
-
-function admin_mutate_json($relativePath, $mutator)
-{
-    $path = ADMIN_ROOT . $relativePath;
-    $handle = fopen($path, 'c+');
-    if ($handle === false) {
-        throw new RuntimeException('Data gagal dibuka: ' . $relativePath);
-    }
-    try {
-        if (!flock($handle, LOCK_EX)) {
-            throw new RuntimeException('Data gagal dikunci: ' . $relativePath);
-        }
-        $content = stream_get_contents($handle);
-        $data = $content === '' ? [] : json_decode($content, true);
-        if (!is_array($data)) {
-            throw new RuntimeException('Format data JSON tidak valid: ' . $relativePath);
-        }
-        $result = $mutator($data);
-        $encoded = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if ($encoded === false || !ftruncate($handle, 0) || !rewind($handle) ||
-            fwrite($handle, $encoded . PHP_EOL) === false || !fflush($handle)) {
-            throw new RuntimeException('Data gagal disimpan: ' . $relativePath);
-        }
-        flock($handle, LOCK_UN);
-        return $result;
-    } finally {
-        fclose($handle);
-    }
+    return goodlife_db_legacy_read($relativePath);
 }
 
 function admin_h($value)

@@ -1,5 +1,6 @@
 <?php
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/../database/repository.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -17,105 +18,71 @@ if ($lookup === '') {
     exit;
 }
 
-$dataPath = __DIR__ . '/../data/orders.json';
-$ordersContent = file_get_contents($dataPath);
-$orders = $ordersContent === false ? null : json_decode($ordersContent, true);
-if (!is_array($orders)) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Data pesanan tidak dapat dibaca.']);
-    exit;
-}
-
-$matches = [];
-if (preg_match('/^ORD[0-9]{9}$/i', $lookup)) {
-    foreach ($orders as $order) {
-        if (is_array($order) && strtoupper((string)($order['id'] ?? '')) === strtoupper($lookup)) {
-            $matches[] = $order;
-            break;
+try {
+    if (preg_match('/^ORD[0-9]{9,}$/i', $lookup)) {
+        $matches = goodlife_db_orders(['order_code' => strtoupper($lookup)]);
+    } else {
+        $whatsapp = preg_replace('/\D+/', '', $lookup);
+        if (strpos($whatsapp, '0') === 0) {
+            $whatsapp = '62' . substr($whatsapp, 1);
+        } elseif (strpos($whatsapp, '8') === 0) {
+            $whatsapp = '62' . $whatsapp;
         }
+        if (!preg_match('/^628[0-9]{7,11}$/', $whatsapp)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Masukkan nomor WhatsApp Indonesia yang valid atau ID pesanan.']);
+            exit;
+        }
+        $matches = goodlife_db_orders(['whatsapp' => $whatsapp]);
     }
-} else {
-    $whatsapp = preg_replace('/\D+/', '', $lookup);
-    if (strpos($whatsapp, '0') === 0) {
-        $whatsapp = '62' . substr($whatsapp, 1);
-    } elseif (strpos($whatsapp, '8') === 0) {
-        $whatsapp = '62' . $whatsapp;
-    }
-    if (!preg_match('/^628[0-9]{7,11}$/', $whatsapp)) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Masukkan nomor WhatsApp Indonesia yang valid atau ID pesanan.']);
+
+    if (!$matches) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Pesanan tidak ditemukan. Periksa nomor WhatsApp atau ID pesanan.']);
         exit;
     }
 
-    foreach ($orders as $order) {
-        if (!is_array($order)) {
-            continue;
-        }
-        $storedWhatsApp = preg_replace('/\D+/', '', (string)($order['whatsapp'] ?? ''));
-        if (strpos($storedWhatsApp, '0') === 0) {
-            $storedWhatsApp = '62' . substr($storedWhatsApp, 1);
-        } elseif (strpos($storedWhatsApp, '8') === 0) {
-            $storedWhatsApp = '62' . $storedWhatsApp;
-        }
-        if ($storedWhatsApp === $whatsapp) {
-            $matches[] = $order;
+    $reviewsByOrderId = [];
+    foreach (goodlife_db_reviews() as $review) {
+        if (!empty($review['order_id'])) {
+            $reviewsByOrderId[$review['order_id']] = true;
         }
     }
-}
 
-if (!$matches) {
-    http_response_code(404);
-    echo json_encode(['ok' => false, 'error' => 'Pesanan tidak ditemukan. Periksa nomor WhatsApp atau ID pesanan.']);
-    exit;
-}
-
-$result = [];
-$reviewsContent = file_get_contents(__DIR__ . '/../data/reviews.json');
-$reviews = $reviewsContent === false ? null : json_decode($reviewsContent, true);
-if (!is_array($reviews)) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Data ulasan tidak dapat dibaca.']);
-    exit;
-}
-$reviewedOrderIds = [];
-foreach ($reviews as $review) {
-    if (is_array($review) && !empty($review['order_id'])) {
-        $reviewedOrderIds[(string)$review['order_id']] = true;
-    }
-}
-foreach ($matches as $order) {
-    $items = [];
-    $orderItems = is_array($order['items'] ?? null) ? $order['items'] : [];
-    foreach ($orderItems as $item) {
-        if (!is_array($item)) {
-            continue;
+    $result = [];
+    foreach ($matches as $order) {
+        $items = [];
+        foreach ($order['items'] as $item) {
+            $items[] = [
+                'nama' => $item['nama'],
+                'qty' => (int)$item['qty'],
+                'notes' => $item['notes'],
+                'toppings' => array_map(static function ($topping) {
+                    return ['nama' => $topping['nama']];
+                }, $item['toppings']),
+            ];
         }
-        $itemToppings = is_array($item['toppings'] ?? null) ? $item['toppings'] : [];
-        $items[] = [
-            'nama' => htmlspecialchars_decode((string)($item['nama'] ?? 'Menu'), ENT_QUOTES),
-            'qty' => (int)($item['qty'] ?? 0),
-            'notes' => htmlspecialchars_decode((string)($item['notes'] ?? ''), ENT_QUOTES),
-            'toppings' => array_values(array_map(function ($topping) {
-                return ['nama' => htmlspecialchars_decode((string)($topping['nama'] ?? ''), ENT_QUOTES)];
-            }, array_filter($itemToppings, 'is_array'))),
+
+        $isReviewed = isset($reviewsByOrderId[$order['id']]);
+        $result[] = [
+            'id' => $order['id'],
+            'nama_pemesan' => $order['nama_pemesan'],
+            'items' => $items,
+            'total' => (int)$order['total'],
+            'status' => $order['status'],
+            'status_pembayaran' => $order['status_pembayaran'],
+            'metode_bayar' => $order['metode_bayar'],
+            'pengiriman' => $order['pengiriman'],
+            'waktu_pengambilan' => $order['waktu_pengambilan'],
+            'tanggal' => $order['tanggal'],
+            'ulasan_tersedia' => $order['status'] === 'Selesai' && !$isReviewed,
+            'ulasan_dikirim' => $isReviewed,
         ];
     }
-    $orderId = (string)($order['id'] ?? '');
-    $isReviewed = isset($reviewedOrderIds[$orderId]);
-    $result[] = [
-        'id' => $orderId,
-        'nama_pemesan' => (string)($order['nama_pemesan'] ?? ''),
-        'items' => $items,
-        'total' => (int)($order['total'] ?? 0),
-        'status' => (string)($order['status'] ?? 'Diterima'),
-        'status_pembayaran' => (string)($order['status_pembayaran'] ?? 'Belum dibayar'),
-        'metode_bayar' => (string)($order['metode_bayar'] ?? ''),
-        'pengiriman' => (string)($order['pengiriman'] ?? ''),
-        'waktu_pengambilan' => (string)($order['waktu_pengambilan'] ?? ''),
-        'tanggal' => (string)($order['tanggal'] ?? ''),
-        'ulasan_tersedia' => ($order['status'] ?? '') === 'Selesai' && !$isReviewed,
-        'ulasan_dikirim' => $isReviewed,
-    ];
-}
 
-echo json_encode(['ok' => true, 'orders' => $result], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['ok' => true, 'orders' => $result], JSON_UNESCAPED_UNICODE);
+} catch (Throwable $error) {
+    error_log('Customer order lookup failed: ' . $error->getMessage());
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'Pesanan gagal diperiksa. Silakan coba lagi nanti.']);
+}

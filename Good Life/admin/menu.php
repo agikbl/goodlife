@@ -2,8 +2,8 @@
 require __DIR__ . '/includes/bootstrap.php';
 admin_require_auth();
 
-$menu = admin_read_json('data/menu.json');
-$categoryRecords = admin_read_json('data/categories.json');
+$menu = admin_read_dataset('data/menu.json');
+$categoryRecords = admin_read_dataset('data/categories.json');
 $categories = [];
 foreach ($categoryRecords as $category) {
     if (!is_array($category) || !isset($category['id'], $category['nama'])) {

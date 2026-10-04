@@ -7,17 +7,6 @@ function menu_error($message, $status = 400)
     admin_json_response(['ok' => false, 'error' => $message], $status);
 }
 
-function remove_uploaded_menu_image($relativePath)
-{
-    if (!is_string($relativePath) || !preg_match('#^assets/menu/[a-f0-9]{32}\.(jpg|png|webp)$#', $relativePath)) {
-        return;
-    }
-    $path = ADMIN_ROOT . $relativePath;
-    if (is_file($path) && !unlink($path)) {
-        error_log('Unable to remove old menu image: ' . $path);
-    }
-}
-
 $isJson = stripos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false;
 $input = $isJson ? json_decode(file_get_contents('php://input'), true) : $_POST;
 if (!is_array($input)) {
@@ -27,16 +16,10 @@ if (!is_array($input)) {
 if (($input['action'] ?? '') === 'availability') {
     $id = (string)($input['id'] ?? '');
     try {
-        $item = admin_mutate_json('data/menu.json', function (&$menu) use ($id, $input) {
-            foreach ($menu as &$entry) {
-                if (($entry['id'] ?? '') === $id) {
-                    $entry['tersedia'] = filter_var($input['tersedia'] ?? false, FILTER_VALIDATE_BOOLEAN);
-                    return $entry;
-                }
-            }
-            unset($entry);
-            throw new OutOfBoundsException('Menu tidak ditemukan.');
-        });
+        $item = goodlife_db_set_product_availability(
+            $id,
+            filter_var($input['tersedia'] ?? false, FILTER_VALIDATE_BOOLEAN)
+        );
         admin_json_response(['ok' => true, 'menu' => $item]);
     } catch (OutOfBoundsException $error) {
         menu_error($error->getMessage(), 404);
@@ -46,7 +29,7 @@ if (($input['action'] ?? '') === 'availability') {
     }
 }
 
-$categoryRecords = admin_read_json('data/categories.json');
+$categoryRecords = admin_read_dataset('data/categories.json');
 $categories = array_column($categoryRecords, 'id');
 $categories = array_merge($categories, ['extra_topping_makanan', 'extra_topping_minuman']);
 $name = trim((string)($input['nama'] ?? ''));
@@ -71,60 +54,34 @@ if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] !== UPLOAD_ERR_NO_FIL
     if (!isset($extensions[$mime]) || !$dimensions || $dimensions[0] > 6000 || $dimensions[1] > 6000) {
         menu_error('Format gambar harus JPG, PNG, atau WebP dengan dimensi maksimal 6000×6000.');
     }
-    $directory = ADMIN_ROOT . 'assets/menu';
-    if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
-        menu_error('Folder gambar menu gagal disiapkan.', 500);
-    }
     $filename = bin2hex(random_bytes(16)) . '.' . $extensions[$mime];
-    if (!move_uploaded_file($file['tmp_name'], $directory . '/' . $filename)) {
-        menu_error('Gambar menu gagal disimpan.', 500);
-    }
     $imagePath = 'assets/menu/' . $filename;
+    try {
+        goodlife_db_save_media($imagePath, $file['tmp_name'], $mime);
+    } catch (Throwable $error) {
+        error_log('Admin menu image database save failed: ' . $error->getMessage());
+        menu_error('Gambar menu gagal disimpan ke database.', 500);
+    }
 }
 
 try {
-    $saved = admin_mutate_json('data/menu.json', function (&$menu) use ($id, $name, $category, $price, $input, $imagePath) {
-        $existingIndex = null;
-        foreach ($menu as $index => $entry) {
-            if (($entry['id'] ?? '') === $id && $id !== '') {
-                $existingIndex = $index;
-                break;
-            }
-        }
-        if ($id !== '' && $existingIndex === null) {
-            throw new OutOfBoundsException('Menu yang akan diedit tidak ditemukan.');
-        }
-        if ($existingIndex === null) {
-            $id = 'adm' . bin2hex(random_bytes(5));
-        }
-        $oldImage = $existingIndex === null ? null : ($menu[$existingIndex]['gambar'] ?? null);
-        $entry = $existingIndex === null ? [
-            'id' => $id,
-            'favorit' => false,
-        ] : $menu[$existingIndex];
-        $entry['nama'] = $name;
-        $entry['kategori'] = $category;
-        $entry['harga'] = $price;
-        $entry['tersedia'] = filter_var($input['tersedia'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        if ($imagePath !== null) {
-            $entry['gambar'] = $imagePath;
-        }
-        if ($existingIndex === null) {
-            $menu[] = $entry;
-        } else {
-            $menu[$existingIndex] = $entry;
-        }
-        return ['entry' => $entry, 'old_image' => $imagePath === null ? null : $oldImage];
-    });
-    if ($saved['old_image']) {
-        remove_uploaded_menu_image($saved['old_image']);
+    $product = [
+        'id' => $id,
+        'nama' => $name,
+        'kategori' => $category,
+        'harga' => $price,
+        'tersedia' => filter_var($input['tersedia'] ?? false, FILTER_VALIDATE_BOOLEAN),
+    ];
+    if ($imagePath !== null) {
+        $product['gambar'] = $imagePath;
     }
-    admin_json_response(['ok' => true, 'menu' => $saved['entry']]);
+    $saved = goodlife_db_save_product($product);
+    admin_json_response(['ok' => true, 'menu' => $saved['product']]);
 } catch (OutOfBoundsException $error) {
-    if ($imagePath !== null) remove_uploaded_menu_image($imagePath);
+    if ($imagePath !== null) goodlife_db_delete_media_if_unreferenced($imagePath);
     menu_error($error->getMessage(), 404);
 } catch (Throwable $error) {
     error_log('Admin menu save failed: ' . $error->getMessage());
-    if ($imagePath !== null) remove_uploaded_menu_image($imagePath);
+    if ($imagePath !== null) goodlife_db_delete_media_if_unreferenced($imagePath);
     menu_error('Menu gagal disimpan.', 500);
 }

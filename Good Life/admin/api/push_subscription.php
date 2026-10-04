@@ -28,22 +28,9 @@ if ($action === 'subscribe') {
 try {
     if ($action === 'subscribe') {
         admin_push_vapid_config();
-        admin_mutate_json('data/push_subscriptions.json', function (&$records) use ($endpoint, $keys) {
-            foreach ($records as $index => $record) {
-                if (is_array($record) && hash_equals((string)($record['endpoint'] ?? ''), $endpoint)) {
-                    $records[$index] = ['endpoint' => $endpoint, 'keys' => $keys];
-                    return;
-                }
-            }
-            $records[] = ['endpoint' => $endpoint, 'keys' => $keys];
-        });
+        goodlife_db_save_push_subscription($endpoint, $keys);
     } else {
-        admin_mutate_json('data/push_subscriptions.json', function (&$records) use ($endpoint) {
-            $records = array_values(array_filter($records, function ($record) use ($endpoint) {
-                return !is_array($record) ||
-                    !hash_equals((string)($record['endpoint'] ?? ''), $endpoint);
-            }));
-        });
+        goodlife_db_remove_push_subscription($endpoint);
     }
     admin_json_response(['ok' => true]);
 } catch (Throwable $error) {

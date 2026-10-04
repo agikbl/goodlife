@@ -14,43 +14,7 @@ if ($orderId === '' || !in_array($action, $allowedActions, true)) {
 }
 
 try {
-    $updated = admin_mutate_json('data/orders.json', function (&$orders) use ($orderId, $action) {
-        foreach ($orders as &$order) {
-            if (!is_array($order) || ($order['id'] ?? '') !== $orderId) {
-                continue;
-            }
-            if ($action === 'paid') {
-                if (($order['status_pembayaran'] ?? 'Belum dibayar') === 'Lunas') {
-                    throw new DomainException('Pesanan sudah ditandai lunas.');
-                }
-                $order['status_pembayaran'] = 'Lunas';
-            } else {
-                $current = $order['status'] ?? 'Diterima';
-                $isDelivery = ($order['pengiriman'] ?? '') === 'antar';
-                $paymentMethod = $order['metode_bayar'] ?? '';
-                $isPaid = ($order['status_pembayaran'] ?? '') === 'Lunas';
-                if ($paymentMethod === 'qris' && !$isPaid) {
-                    throw new DomainException('Pesanan QRIS harus dikonfirmasi lunas sebelum diproses.');
-                }
-                $transitions = [
-                    'Diterima' => 'Diproses',
-                    'Diproses' => $isDelivery ? 'Diantarkan' : 'Siap Diambil',
-                    'Diantarkan' => 'Selesai',
-                    'Siap Diambil' => 'Selesai',
-                ];
-                if (!isset($transitions[$current])) {
-                    throw new DomainException('Pesanan sudah berada pada status akhir.');
-                }
-                if ($transitions[$current] === 'Selesai' && !$isPaid) {
-                    throw new DomainException('Pembayaran tunai harus ditandai lunas sebelum pesanan diselesaikan.');
-                }
-                $order['status'] = $transitions[$current];
-            }
-            return $order;
-        }
-        unset($order);
-        throw new OutOfBoundsException('Pesanan tidak ditemukan.');
-    });
+    $updated = goodlife_db_advance_order($orderId, $action);
     admin_json_response(['ok' => true, 'order' => $updated]);
 } catch (DomainException $error) {
     admin_json_response(['ok' => false, 'error' => $error->getMessage()], 409);
