@@ -1,5 +1,2 @@
-/vendor/
-/.env
-/.env.*
-!/.env.example
-/data/push_subscriptions.json
+/admin-config.local.php
+/database/config.local.php

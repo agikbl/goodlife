@@ -9,7 +9,7 @@ require_once __DIR__ . '/connection.php';
 
 try {
     $pdo = goodlife_db();
-    $requiredMigration = $pdo->prepare('SELECT COUNT(*) FROM schema_migrations WHERE version = ?');
+    $requiredMigration = $pdo->prepare('SELECT COUNT(*) FROM catatan_migrasi WHERE versi = ?');
     $requiredMigration->execute(['006_media_asset_chunks']);
     if ((int)$requiredMigration->fetchColumn() !== 1) {
         throw new RuntimeException('Apply database/migrations/006_media_asset_chunks.sql before importing images.');
@@ -19,13 +19,13 @@ try {
     if ((int)$requiredMigration->fetchColumn() !== 0) {
         throw new RuntimeException('Image import is already recorded; refusing to run it again.');
     }
-    if ((int)$pdo->query('SELECT COUNT(*) FROM media_asset_chunks')->fetchColumn() !== 0) {
-        throw new RuntimeException('media_asset_chunks is not empty; image import cancelled.');
+    if ((int)$pdo->query('SELECT COUNT(*) FROM potongan_aset_media')->fetchColumn() !== 0) {
+        throw new RuntimeException('potongan_aset_media is not empty; image import cancelled.');
     }
 
     $paths = $pdo->query(
-        'SELECT image_path FROM products WHERE image_path IS NOT NULL
-         UNION SELECT image_path FROM store_gallery ORDER BY image_path'
+        'SELECT jalur_gambar FROM produk WHERE jalur_gambar IS NOT NULL
+         UNION SELECT jalur_gambar FROM galeri_toko ORDER BY jalur_gambar'
     )->fetchAll(PDO::FETCH_COLUMN);
     $baseDirectory = dirname(__DIR__);
     $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -34,19 +34,19 @@ try {
         'image/png' => 'png',
         'image/webp' => 'webp',
     ];
-    $findAsset = $pdo->prepare('SELECT 1 FROM media_assets WHERE asset_path = ?');
+    $findAsset = $pdo->prepare('SELECT 1 FROM aset_media WHERE jalur_aset = ?');
     $insertAsset = $pdo->prepare(
-        'INSERT INTO media_assets (asset_path, mime_type, byte_size, sha256, created_at)
+        'INSERT INTO aset_media (jalur_aset, jenis_mime, ukuran_byte, hash_sha256, dibuat_pada)
          VALUES (?, ?, ?, ?, UTC_TIMESTAMP(6))'
     );
     $updateAsset = $pdo->prepare(
-        'UPDATE media_assets SET mime_type = ?, byte_size = ?, sha256 = ? WHERE asset_path = ?'
+        'UPDATE aset_media SET jenis_mime = ?, ukuran_byte = ?, hash_sha256 = ? WHERE jalur_aset = ?'
     );
     $insertChunk = $pdo->prepare(
-        'INSERT INTO media_asset_chunks (asset_path, chunk_index, chunk_data) VALUES (?, ?, ?)'
+        'INSERT INTO potongan_aset_media (jalur_aset, nomor_potongan, data_potongan) VALUES (?, ?, ?)'
     );
     $readChunk = $pdo->prepare(
-        'SELECT chunk_data FROM media_asset_chunks WHERE asset_path = ? AND chunk_index = ?'
+        'SELECT data_potongan FROM potongan_aset_media WHERE jalur_aset = ? AND nomor_potongan = ?'
     );
 
     $pdo->beginTransaction();
@@ -114,12 +114,13 @@ try {
         }
     }
 
-    $record = $pdo->prepare('INSERT INTO schema_migrations (version) VALUES (?)');
+    $record = $pdo->prepare('INSERT INTO catatan_migrasi (versi) VALUES (?)');
     $record->execute([$importVersion]);
     $pdo->commit();
 
     echo 'Referenced media files imported: ' . count($paths) . PHP_EOL;
-    echo 'Total database image bytes: ' . (int)$pdo->query('SELECT SUM(byte_size) FROM media_assets')->fetchColumn() . PHP_EOL;
+    echo 'Total database image bytes: ' .
+        (int)$pdo->query('SELECT SUM(ukuran_byte) FROM aset_media')->fetchColumn() . PHP_EOL;
 } catch (Throwable $error) {
     if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
         try {

@@ -42,27 +42,27 @@ function goodlife_import_legacy_datetime($value, $dateOnly = false)
 try {
     $pdo = goodlife_db();
     $migrationVersion = '002_initial_data_import';
-    $existingMigration = $pdo->prepare('SELECT COUNT(*) FROM schema_migrations WHERE version = ?');
+    $existingMigration = $pdo->prepare('SELECT COUNT(*) FROM catatan_migrasi WHERE versi = ?');
     $existingMigration->execute([$migrationVersion]);
     if ((int)$existingMigration->fetchColumn() !== 0) {
         throw new RuntimeException('Initial data import is already recorded; refusing to run it again.');
     }
-    $sortOrderMigration = $pdo->prepare('SELECT COUNT(*) FROM schema_migrations WHERE version = ?');
+    $sortOrderMigration = $pdo->prepare('SELECT COUNT(*) FROM catatan_migrasi WHERE versi = ?');
     $sortOrderMigration->execute(['003_product_sort_order']);
     if ((int)$sortOrderMigration->fetchColumn() !== 1) {
         throw new RuntimeException('Apply database/migrations/003_product_sort_order.sql before importing initial data.');
     }
 
     $targetTables = [
-        'categories',
-        'products',
-        'store_settings',
-        'store_gallery',
-        'support_messages',
-        'orders',
-        'order_items',
-        'order_item_toppings',
-        'reviews',
+        'kategori',
+        'produk',
+        'pengaturan_toko',
+        'galeri_toko',
+        'pesan_bantuan',
+        'pesanan',
+        'detail_pesanan',
+        'topping_detail_pesanan',
+        'ulasan',
     ];
     foreach ($targetTables as $table) {
         $count = (int)$pdo->query('SELECT COUNT(*) FROM `' . $table . '`')->fetchColumn();
@@ -109,7 +109,8 @@ try {
     $pdo->beginTransaction();
     $nowUtc = gmdate('Y-m-d H:i:s');
     $insertCategory = $pdo->prepare(
-        'INSERT INTO categories (id, name, group_type, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO kategori (id_kategori, nama_kategori, jenis_kelompok, urutan_tampil, dibuat_pada, diperbarui_pada)
+         VALUES (?, ?, ?, ?, ?, ?)'
     );
     foreach ($categories as $position => $category) {
         $insertCategory->execute([
@@ -123,7 +124,10 @@ try {
     }
 
     $insertProduct = $pdo->prepare(
-        'INSERT INTO products (id, product_type, category_id, topping_group, name, price, is_favorite, is_available, image_path, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO produk
+         (id_produk, jenis_produk, id_kategori, kelompok_topping, nama_produk, harga, favorit, tersedia,
+          jalur_gambar, urutan_tampil, dibuat_pada, diperbarui_pada)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     foreach ($products as $productPosition => $product) {
         if (!is_array($product) || !is_string($product['id'] ?? null) ||
@@ -168,7 +172,10 @@ try {
 
     $statusUpdatedAt = goodlife_import_legacy_datetime($store['status_updated_at'] ?? null);
     $insertStore = $pdo->prepare(
-        'INSERT INTO store_settings (id, name, address, whatsapp, opening_time, closing_time, is_open, activity, status_updated_at, updated_at) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO pengaturan_toko
+         (id_pengaturan_toko, nama_toko, alamat_toko, nomor_whatsapp, jam_buka, jam_tutup, sedang_buka,
+          keterangan_aktivitas, status_diperbarui_pada, diperbarui_pada)
+         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $insertStore->execute([
         $store['nama'],
@@ -183,7 +190,8 @@ try {
     ]);
 
     $insertGalleryImage = $pdo->prepare(
-        'INSERT INTO store_gallery (store_settings_id, image_path, sort_order, created_at) VALUES (1, ?, ?, ?)'
+        'INSERT INTO galeri_toko (id_pengaturan_toko, jalur_gambar, urutan_tampil, dibuat_pada)
+         VALUES (1, ?, ?, ?)'
     );
     foreach (array_values($store['gallery']) as $position => $imagePath) {
         if (!is_string($imagePath) || $imagePath === '') {
@@ -193,7 +201,9 @@ try {
     }
 
     $insertSupportMessage = $pdo->prepare(
-        'INSERT INTO support_messages (name, contact, category, message, status, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO pesan_bantuan
+         (nama_pengirim, kontak, kategori, isi_pesan, status_penanganan, diterima_pada)
+         VALUES (?, ?, ?, ?, ?, ?)'
     );
     foreach ($supportMessages as $message) {
         if (!is_array($message) || !is_string($message['nama'] ?? null) ||
@@ -215,7 +225,7 @@ try {
         ]);
     }
 
-    $recordMigration = $pdo->prepare('INSERT INTO schema_migrations (version) VALUES (?)');
+    $recordMigration = $pdo->prepare('INSERT INTO catatan_migrasi (versi) VALUES (?)');
     $recordMigration->execute([$migrationVersion]);
     $pdo->commit();
 

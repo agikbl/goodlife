@@ -66,6 +66,12 @@ if ($customerName === '' || strlen($customerName) > 100 ||
     echo json_encode(['ok' => false, 'error' => 'Data pesanan tidak lengkap.']);
     exit;
 }
+if ($metodeBayar === 'tunai' && empty($store['menerima_tunai'])) {
+    http_response_code(409);
+    echo json_encode(['ok' => false, 'error' => 'Tidak menerima pembayaran tunai untuk saat ini.']);
+    exit;
+}
+
 if (($pengiriman === 'ambil' && !preg_match('/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/', $pickupTime)) ||
     ($pengiriman === 'antar' && $pickupTime !== '')) {
     http_response_code(400);

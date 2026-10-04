@@ -116,28 +116,30 @@ try {
         'kategori' => 'Saran',
         'pesan' => $supportMessage,
     ]);
-    $supportQuery = $pdo->prepare('SELECT COUNT(*) FROM support_messages WHERE contact = ? AND message = ?');
+    $supportQuery = $pdo->prepare(
+        'SELECT COUNT(*) FROM pesan_bantuan WHERE kontak = ? AND isi_pesan = ?'
+    );
     $supportQuery->execute([$supportContact, $supportMessage]);
     $assert((int)$supportQuery->fetchColumn() === 1, 'Support message did not persist.');
 
     echo 'Integration checks passed: ' . $assertions . PHP_EOL;
 } finally {
     if ($orderCode !== null) {
-        $orderIdQuery = $pdo->prepare('SELECT id FROM orders WHERE order_code = ?');
+        $orderIdQuery = $pdo->prepare('SELECT id_pesanan FROM pesanan WHERE kode_pesanan = ?');
         $orderIdQuery->execute([$orderCode]);
         $databaseOrderId = $orderIdQuery->fetchColumn();
         if ($databaseOrderId) {
-            $pdo->prepare('DELETE FROM reviews WHERE order_id = ?')->execute([$databaseOrderId]);
-            $pdo->prepare('DELETE FROM orders WHERE id = ?')->execute([$databaseOrderId]);
+            $pdo->prepare('DELETE FROM ulasan WHERE id_pesanan = ?')->execute([$databaseOrderId]);
+            $pdo->prepare('DELETE FROM pesanan WHERE id_pesanan = ?')->execute([$databaseOrderId]);
         }
     }
-    $pdo->prepare('DELETE FROM support_messages WHERE contact = ? AND message = ?')
+    $pdo->prepare('DELETE FROM pesan_bantuan WHERE kontak = ? AND isi_pesan = ?')
         ->execute([$supportContact, $supportMessage]);
     if ($productId !== null) {
-        $pdo->prepare('DELETE FROM products WHERE id = ?')->execute([$productId]);
+        $pdo->prepare('DELETE FROM produk WHERE id_produk = ?')->execute([$productId]);
     }
     if ($category !== null) {
-        $pdo->prepare('DELETE FROM categories WHERE id = ?')->execute([$category['id']]);
+        $pdo->prepare('DELETE FROM kategori WHERE id_kategori = ?')->execute([$category['id']]);
     }
     goodlife_db_delete_media_if_unreferenced($mediaPath);
     if (is_string($temporaryImage) && is_file($temporaryImage)) {

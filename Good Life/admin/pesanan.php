@@ -96,7 +96,7 @@ function renderOrders(orders) {
   visibleOrders.forEach(function (order) {
     var row = document.createElement('tr');
     var items = (order.items || []).map(function (item) {
-      var detail = escapeText(item.qty) + '× ' + escapeText(item.nama);
+      var detail = escapeText(item.qty) + '\u00d7 ' + escapeText(item.nama);
       if (item.toppings && item.toppings.length) detail += ' + ' + item.toppings.map(function (topping) { return escapeText(topping.nama); }).join(', ');
       if (item.notes) detail += '<br><span class="muted">Catatan: ' + escapeText(item.notes) + '</span>';
       return detail;
@@ -111,7 +111,10 @@ function renderOrders(orders) {
     var statusButton = nextStatus
       ? '<button type="button" class="btn btn--primary" data-order-action="status" data-order-id="' + escapeText(order.id) + '"' +
         (canAdvanceOrder(order, nextStatus) ? '' : ' disabled title="Konfirmasi pembayaran sebelum melanjutkan status."') +
-        '>→ ' + escapeText(nextStatus) + '</button>'
+        '>&rarr; ' + escapeText(nextStatus) + '</button>'
+      : '';
+    var rejectButton = order.metode_bayar === 'tunai' && order.status === 'Diterima'
+      ? '<button type="button" class="btn btn--danger" data-order-action="reject" data-order-id="' + escapeText(order.id) + '">Tolak pesanan</button>'
       : '';
     var paymentStatus = order.status_pembayaran || 'Belum dibayar';
     var paidButton = paymentStatus !== 'Lunas'
@@ -129,7 +132,7 @@ function renderOrders(orders) {
       '<td>' + escapeText(formatMoney(order.total)) + '</td>' +
       '<td><span class="badge ' + (paymentStatus === 'Lunas' ? 'badge--success' : 'badge--warning') + '">' + escapeText(paymentStatus) + '</span></td>' +
       '<td><span class="badge">' + escapeText(orderStatus(order)) + '</span></td>' +
-      '<td><div class="actions">' + route + statusButton + paidButton + '</div></td>';
+      '<td><div class="actions">' + route + statusButton + paidButton + rejectButton + '</div></td>';
     var routeLink = row.querySelector('[data-route-link]');
     if (routeLink) {
       routeLink.href = 'https://www.google.com/maps/dir/?api=1&destination=' + latitude + ',' + longitude;

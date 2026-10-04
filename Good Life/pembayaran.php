@@ -1,5 +1,8 @@
 <?php
 session_start();
+require_once __DIR__ . '/database/repository.php';
+$cashAccepted = true;
+try { $cashAccepted = !empty(goodlife_db_store()['menerima_tunai']); } catch (Throwable $error) { $cashAccepted = false; }
 
 $draft = $_SESSION['checkout_draft'] ?? null;
 if (!is_array($draft) || !isset($draft['token'], $draft['items'], $draft['subtotal'], $draft['expires_at']) || $draft['expires_at'] < time()) {
@@ -17,7 +20,7 @@ $draftJson = json_encode($draft['items'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HE
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pembayaran — Good Life Parepare</title>
+<title>Pembayaran &mdash; Good Life Parepare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -55,7 +58,7 @@ $draftJson = json_encode($draft['items'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HE
     <div class="step" data-step="2">
       <h2>Pengiriman</h2>
       <button type="button" class="choice" data-delivery="ambil"><strong>Ambil di toko</strong><small>Kamu jemput sendiri pesanan ke Good Life Parepare.</small></button>
-      <button type="button" class="choice" data-delivery="antar"><strong>Diantarkan ke lokasi</strong><small>Tandai lokasi pada peta. Jarak rute diperkirakan dari jarak lurus × 1,3.</small></button>
+      <button type="button" class="choice" data-delivery="antar"><strong>Diantarkan ke lokasi</strong><small>Tandai lokasi pada peta. Jarak rute diperkirakan dari jarak lurus &times; 1,3.</small></button>
       <div class="field" id="pickupTimeField" hidden>
         <label for="pickupTime">Perkiraan waktu pengambilan</label>
         <input type="time" id="pickupTime">
@@ -67,7 +70,7 @@ $draftJson = json_encode($draft['items'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HE
             <button class="btn btn--ghost" type="button" id="locateMe">Gunakan lokasi saya</button>
           </div>
           <div class="map" id="deliveryMap" aria-label="Peta untuk memilih lokasi pengantaran"></div>
-          <div class="distance-info"><span id="distanceText">Pilih lokasi pengantaran pada peta</span><strong id="shippingFee">Ongkir —</strong></div>
+          <div class="distance-info"><span id="distanceText">Pilih lokasi pengantaran pada peta</span><strong id="shippingFee">Ongkir &mdash;</strong></div>
         </div>
         <div class="field field--address">
           <label for="address">Alamat atau patokan tambahan (opsional)</label>
@@ -86,7 +89,7 @@ $draftJson = json_encode($draft['items'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HE
     <div class="step" data-step="3">
       <h2>Metode pembayaran</h2>
       <button type="button" class="choice" data-payment="qris"><strong>QRIS</strong><small>Scan &amp; bayar lewat aplikasi e-wallet atau m-banking.</small></button>
-      <button type="button" class="choice" data-payment="tunai"><strong>Tunai</strong><small>Bayar cash saat ambil atau pesanan diantar.</small></button>
+      <?php if ($cashAccepted): ?><button type="button" class="choice" data-payment="tunai"><strong>Tunai</strong><small>Bayar cash saat ambil atau pesanan diantar.</small></button><?php else: ?><div class="choice" aria-disabled="true"><strong>Tunai tidak tersedia</strong><small>Tidak menerima pembayaran tunai untuk saat ini!</small></div><?php endif; ?>
       <div id="finalSummary"></div>
       <p class="error" id="step3Error" hidden></p>
       <div class="actions"><button type="button" class="btn btn--ghost" id="back3">Kembali</button><button type="button" class="btn btn--solid btn--block" id="placeOrder" disabled>Buat pesanan</button></div>
@@ -135,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function () {
     items.forEach(function (item) {
       var row = document.createElement('div');
       row.className = 'summary-row';
-      var description = item.qty + '× ' + item.nama;
+      var description = item.qty + '\u00d7 ' + item.nama;
       if (item.toppings.length) description += ' + ' + item.toppings.map(function (topping) { return topping.nama; }).join(', ');
       var name = document.createElement('span');
       name.textContent = description;

@@ -8,7 +8,7 @@ if (!is_array($input)) {
 }
 $orderId = trim((string)($input['order_id'] ?? ''));
 $action = $input['action'] ?? 'status';
-$allowedActions = ['status', 'paid'];
+$allowedActions = ['status', 'paid', 'reject'];
 if ($orderId === '' || !in_array($action, $allowedActions, true)) {
     admin_json_response(['ok' => false, 'error' => 'Data pembaruan tidak valid.'], 400);
 }

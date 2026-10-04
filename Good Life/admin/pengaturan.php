@@ -17,6 +17,7 @@ require __DIR__ . '/includes/header.php';
     <div class="field"><label for="open">Jam buka</label><input id="open" name="jam_buka" type="time" required value="<?php echo admin_h($store['jam_buka'] ?? '15:00'); ?>"></div>
     <div class="field"><label for="close">Jam tutup</label><input id="close" name="jam_tutup" type="time" required value="<?php echo admin_h($store['jam_tutup'] ?? '23:00'); ?>"></div>
     <div class="field field--full"><label for="address">Alamat</label><textarea id="address" name="alamat" maxlength="300" required><?php echo admin_h($store['alamat'] ?? ''); ?></textarea></div>
+    <div class="field field--full"><label><input type="checkbox" id="cashAcceptance" <?php echo !empty($store['menerima_tunai']) ? 'checked' : ''; ?>> Terima pembayaran tunai</label><p class="help">Jika dimatikan, pelanggan tidak dapat memilih tunai untuk pembayaran makanan. Pembayaran ongkir tunai tetap tersedia.</p></div>
     <div class="field field--full"><label for="gallery">Tambah foto galeri</label><input id="gallery" type="file" name="gallery[]" accept="image/jpeg,image/png,image/webp" multiple><p class="help">Maksimal 10 foto; JPG, PNG, atau WebP; setiap file maksimal 5 MB.</p></div>
     <div class="field--full actions"><button class="btn btn--primary" type="submit">Simpan pengaturan</button></div>
     <p class="field--full alert alert--error" id="settingsMessage" hidden role="alert"></p>
@@ -38,6 +39,16 @@ require __DIR__ . '/includes/header.php';
 <script>
 var csrfToken = <?php echo json_encode($csrf); ?>;
 var message = document.getElementById('settingsMessage');
+var cashAcceptance = document.getElementById('cashAcceptance');
+cashAcceptance.addEventListener('change', function () {
+  cashAcceptance.disabled = true;
+  fetch('api/update_cash_acceptance.php', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+    body: JSON.stringify({ menerima_tunai: cashAcceptance.checked })
+  }).then(function (response) { return response.json().then(function (data) { if (!response.ok || !data.ok) throw new Error(data.error || 'Pengaturan tunai gagal disimpan.'); }); })
+    .catch(function (error) { cashAcceptance.checked = !cashAcceptance.checked; showMessage(error.message); })
+    .finally(function () { cashAcceptance.disabled = false; });
+});
 function showMessage(text) { message.textContent = text; message.hidden = !text; }
 document.getElementById('settingsForm').addEventListener('submit', function (event) {
   event.preventDefault();

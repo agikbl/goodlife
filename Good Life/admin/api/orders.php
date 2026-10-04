@@ -9,6 +9,7 @@ try {
     $businessTimezone = new DateTimeZone('Asia/Makassar');
     $today = (new DateTimeImmutable('now', $businessTimezone))->format('Y-m-d');
     $orders = array_values(array_filter(admin_read_dataset('data/orders.json'), 'is_array'));
+    $orders = array_values(array_filter($orders, static function ($order) { return ($order['status'] ?? '') !== 'Ditolak'; }));
     $orders = array_values(array_filter($orders, function ($order) use ($showHistory, $today) {
         $timestamp = (string)($order['tanggal'] ?? '');
         if (!preg_match('/^\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2})?$/', $timestamp)) {
